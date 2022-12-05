@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58fbd67eff1b2b4880aef6ff49cbc29, type: 3}
+  m_Name: PuzzleInfo_Maze
+  m_EditorClassIdentifier: 
+  _gameSceneName: PuzzleMaze
+  _gameScreenshot: {fileID: 21300000, guid: ccbb2d2a22bdf7941b5b2edfd710bb54, type: 3}
+  _gameTitle: "\uBBF8\uB85C\uCC3E\uAE30"
+  _gameDescription: "\uBBF8\uB85C\uB97C \uD5E4\uCCD0\uB098\uAC00\uC694"
+  _gameTimesByNanido: 780000006400000064000000640000001e000000
+  _gameSkills: 03000000
+  _challenges:
+  - "@\uC810 \uC774\uC0C1 \uD68D\uB4DD\uD558\uAE30"
+  - "\uD55C \uBC88 @\uCD08 \uC548\uC5D0  \uACE8\uC778\uC9C0\uC810 \uB4E4\uC5B4\uAC00\uAE30"
+  - "\uCD5C\uC18C @\uBC88 \uC6C0\uC9C1\uC774\uAE30"

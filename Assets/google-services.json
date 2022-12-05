@@ -1,0 +1,211 @@
+{
+  "project_info": {
+    "project_number": "614919104208",
+    "firebase_url": "https://perplexbrainbow-default-rtdb.firebaseio.com",
+    "project_id": "perplexbrainbow",
+    "storage_bucket": "perplexbrainbow.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614919104208:android:7e9b9d0d7a4be7b0e560d5",
+        "android_client_info": {
+          "package_name": "com.blazar.com.perplexbrainbow"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614919104208-52la10uvjq0i1i8o96csq0j8lh9r4rco.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.com.perplexbrainbow",
+            "certificate_hash": "88a490c0d5a653fa78c160fca6ed8a23bc21228d"
+          }
+        },
+        {
+          "client_id": "614919104208-g9bh4kgi50ba8jgr6b3i8anet2o6ifjk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.com.perplexbrainbow",
+            "certificate_hash": "8cdd2210fdc38c630edd9799d9436a4efd51ed56"
+          }
+        },
+        {
+          "client_id": "614919104208-n1p1d97v4ob7k2foihlouug9f07l6bad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg8pHUmOxBbyx1ZUkqf5vdniPNpK01YIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614919104208-mqtcavuo9t7erclrmk32a8k8bkatuk76.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "614919104208-k4u2srp5tn0g8muajf0cu52tk9fj7nsp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.blazar.com.perplexbrainbow"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614919104208:android:872a7951c41dee3be560d5",
+        "android_client_info": {
+          "package_name": "com.blazar.enna"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614919104208-eeqkqar592prsp46as16idc3ilmmbmm5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.enna",
+            "certificate_hash": "35b3b9c4a54a70f793f4f1af6f4bd01d7e915d3e"
+          }
+        },
+        {
+          "client_id": "614919104208-jt1qer6fbodu0bfn4blc5ok7uhcjau1u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.enna",
+            "certificate_hash": "6ffaec5fe57d2d1f7ab0d0895c668f605a505f08"
+          }
+        },
+        {
+          "client_id": "614919104208-n1p1d97v4ob7k2foihlouug9f07l6bad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg8pHUmOxBbyx1ZUkqf5vdniPNpK01YIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614919104208-mqtcavuo9t7erclrmk32a8k8bkatuk76.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "614919104208-k4u2srp5tn0g8muajf0cu52tk9fj7nsp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.blazar.com.perplexbrainbow"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614919104208:android:c93c9220ba8748ace560d5",
+        "android_client_info": {
+          "package_name": "com.blazar.lex"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614919104208-dalo4gvpsl17fojd5f32lt978825na1m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.lex",
+            "certificate_hash": "36bed88be9430ba24c7ddaf8cdedb9482f2a865e"
+          }
+        },
+        {
+          "client_id": "614919104208-n5n7l57jfn5320r0j790grs6ce7vd9ol.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.lex",
+            "certificate_hash": "7b63c2553aea5e10d56e67e1509b82259bfb70e5"
+          }
+        },
+        {
+          "client_id": "614919104208-n1p1d97v4ob7k2foihlouug9f07l6bad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg8pHUmOxBbyx1ZUkqf5vdniPNpK01YIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614919104208-mqtcavuo9t7erclrmk32a8k8bkatuk76.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "614919104208-k4u2srp5tn0g8muajf0cu52tk9fj7nsp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.blazar.com.perplexbrainbow"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614919104208:android:caf8482f86254c92e560d5",
+        "android_client_info": {
+          "package_name": "com.blazar.sonson"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614919104208-sg3tgt2n4n0kf8dvfifmb6vs5uscr3uu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.blazar.sonson",
+            "certificate_hash": "87d822cd4efdcf832672c49790cc98777fbcfa18"
+          }
+        },
+        {
+          "client_id": "614919104208-n1p1d97v4ob7k2foihlouug9f07l6bad.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg8pHUmOxBbyx1ZUkqf5vdniPNpK01YIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "614919104208-mqtcavuo9t7erclrmk32a8k8bkatuk76.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "614919104208-k4u2srp5tn0g8muajf0cu52tk9fj7nsp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.blazar.com.perplexbrainbow"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

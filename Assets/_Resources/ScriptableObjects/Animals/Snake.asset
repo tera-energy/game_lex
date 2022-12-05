@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fa5f866853544f43921717afe3e2e53, type: 3}
+  m_Name: Snake
+  m_EditorClassIdentifier: 
+  _animalName: "\uBC40"
+  _animalSprits:
+  - {fileID: 21300000, guid: f22923dacfdec0640ae8e2429cd655b1, type: 3}
+  _animalNameImageBackgroundColor: {r: 0.6886792, g: 0.048727296, b: 0.048727296, a: 0}

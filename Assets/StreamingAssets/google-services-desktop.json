@@ -1,0 +1,37 @@
+{
+  "project_info": {
+    "project_number": "614919104208",
+    "firebase_url": "https://perplexbrainbow-default-rtdb.firebaseio.com",
+    "project_id": "perplexbrainbow",
+    "storage_bucket": "perplexbrainbow.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614919104208:ios:8690dd6fa2e1c498e560d5",
+        "android_client_info": {
+          "package_name": "com.blazar.lex"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "614919104208-qb65e2tiug2n87dchdn3893ovqr1thqc.apps.googleusercontent.com"
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg6h-2cqRkywEvX94WyDKWFuT5MIfQcU0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 0
+        },
+        "appinvite_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

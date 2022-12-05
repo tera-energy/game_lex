@@ -1,0 +1,5 @@
+,ID,Price($),"Type(Stamina=0, )",Number
+1001,_stamina_0,0.99,0,10
+1002,_stamina_1,1.99,0,30
+1003,_stamina_2,2.99,0,50
+1004,_stamina_3,4.99,0,100

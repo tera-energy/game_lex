@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58fbd67eff1b2b4880aef6ff49cbc29, type: 3}
+  m_Name: PuzzleAnimals
+  m_EditorClassIdentifier: 
+  _gameSceneName: PuzzleAnimals
+  _gameScreenshot: {fileID: 21300000, guid: 0f9e238189a1af64fb3e6a54603b4e1c, type: 3}
+  _gameTitle: "\uB3D9\uBB3C\uAC8C\uC784"
+  _gameDescription: "\uB3D9\uBB3C\uC758 \uC5BC\uAD74\uC744 \uBCF4\uAE30\uC758 \uC704\uCE58\uB85C
+    \uC774\uB3D9\uC2DC\uD0A4\uC790!"
+  _gameTimesByNanido: 320000002d00000028000000230000001e000000
+  _gameSkills: 0100000000000000
+  _challenges:
+  - "@\uC810 \uC774\uC0C1 \uD68D\uB4DD\uD558\uAE30"
+  - "\uCD5C\uC18C @\uBC88 \uBA39\uC774 \uC8FC\uAE30"
+  - "\uC5F0\uC18D @\uBC88 \uC815\uB2F5 \uBA39\uC774\uC8FC\uAE30"
