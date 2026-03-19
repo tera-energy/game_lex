@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
-using Firebase.Database;
 using TMPro;
 
 public class TrLobbyManager : MonoBehaviour

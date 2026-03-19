@@ -1,66 +1,28 @@
 using System;
-using System.Linq;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
-using Firebase.Database;
 using UnityEngine;
-using UnityEngine.Networking;
 
 #if PLATFORM_IOS
 using UnityEngine.iOS;
 #endif
 
-public class TrUserNormalInfo
-{
-    public string UserId;
-    public TrUserNormalInfo(string userId)
-    {
-        UserId = userId;
-    }
-}
-
-[Serializable]
-public class TrPlayRank
-{
-    public string _name;
-    public int _score;
-    public TrPlayRank(string name, int score)
-    {
-        _name = name;
-        _score = score;
-    }
-}
-
-/*public class TrJsonAbleListWrapper
-{
-    public List<TrPlayRank> _list;
-    public TrJsonAbleListWrapper(List<TrPlayRank> list) => _list = list;
-}*/
-
 public class DatabaseManager : MonoBehaviour
 {
     static DatabaseManager _instance;
+    public static DatabaseManager xInstance { get { return _instance; } }
 
     public static int _maxWaitingTime = 30;
 
-    DatabaseReference _versionReference;
-    DatabaseReference _rootReference;
-    DatabaseReference _uidReference;
-
     [HideInInspector] public static List<int> _liMyScores;
     [HideInInspector] public List<TrTotalScore> _liTotalScores;
-
     [HideInInspector] public static TrUserData _myDatas;
-
     [HideInInspector] public bool _isSuccess;
-    public static DatabaseManager xInstance { get { return _instance; } }
+
+    string _uid => AuthManager._userId;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void yResetDomainCodes()
-    {
-        _instance = null;
-    }
+    static void yResetDomainCodes() => _instance = null;
 
     void Awake()
     {
@@ -73,384 +35,385 @@ public class DatabaseManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
-
-        string platform = TrProjectSettings.GOOGLE;
-#if PLATFORM_IOS
-        platform = TrProjectSettings.APPLE;
-#endif
-
-        _rootReference = FirebaseDatabase.DefaultInstance.RootReference.Child(TrProjectSettings._character + "User");
-        _versionReference = FirebaseDatabase.DefaultInstance.RootReference.Child("Versions").Child(platform);
     }
 
-    void Update()
+    static List<T> ParseArray<T>(string json)
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            StartCoroutine(zSetMyData());
-
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            //StartCoroutine(zGetMyDataNew());
-            //StartCoroutine(zGetMyData());
-        }
-
+        var wrapper = JsonUtility.FromJson<JsonWrapper<T>>("{\"items\":" + json + "}");
+        return wrapper?.items ?? new List<T>();
     }
 
     #region Score
 
     public IEnumerator zGetDataMyScores()
     {
-        bool isExec = true;
-        _uidReference.Child(TrProjectSettings.SCORES).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
+        bool isDone = false;
+        string url = SupabaseClient.RestUrl("user_scores", $"user_id=eq.{_uid}");
+
+        yield return SupabaseClient.Get(url,
+            onSuccess: json =>
             {
-                Debug.LogError("Failed get scores");
-            }
-            else
-            {
-                DataSnapshot dataSnapshot = task.Result;
+                var list = ParseArray<SupabaseUserScores>(json);
                 _liMyScores = new List<int>();
-                foreach (var score in dataSnapshot.Children)
+                if (list.Count > 0)
                 {
-                    _liMyScores.Add(int.Parse(score.Value.ToString()));
+                    var s = list[0];
+                    _liMyScores.Add(s.score1);
+                    _liMyScores.Add(s.score2);
+                    _liMyScores.Add(s.score3);
+                    _liMyScores.Add(s.score4);
+                    _liMyScores.Add(s.score5);
                 }
-                isExec = false;
-            }
-        });
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed get scores: " + err); isDone = true; });
 
-        yield return new WaitUntil(() => !isExec);
+        yield return new WaitUntil(() => isDone);
     }
-
-    /*public IEnumerator zGetDataTotalScores()
-    {
-        _liScores = null;
-        DateTime baseDate = DateTime.Now;
-        var thisWeekStart = baseDate.AddDays(-(int)baseDate.DayOfWeek);
-        var thisWeekEnd = thisWeekStart.AddDays(7).AddSeconds(-1);
-        string addr = "rank_unity_api";
-        string options = $"stDate={thisWeekStart.ToString("yyyy-MM-dd")}&endDate={thisWeekEnd.ToString("yyyy-MM-dd")}";
-        var www = UnityWebRequest.Get($"{TrEtcSetting.API_URL}/{TrProjectSettings._character}{TrProjectSettings._apiVersion}/{addr}?{options}");
-        yield return www.SendWebRequest();
-        if (www.result == UnityWebRequest.Result.ProtocolError || www.result != UnityWebRequest.Result.Success)
-        {
-            //Debug.LogError(www.error);
-        }
-        else
-        {
-            byte[] results = www.downloadHandler.data;
-            var json = Encoding.UTF8.GetString(results);
-            //Debug.Log(json);
-            _liScores = TT.zFromJson<TrScoresDTO>(json).ToList();
-        }
-    }*/
 
     public IEnumerator zGetDataTotalScores()
     {
-        bool isExec = true;
-        Stack<TrTotalScore> tempStack = new Stack<TrTotalScore>();
-        _rootReference.OrderByChild(TrProjectSettings.MAXSCORE).LimitToLast(50).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.LogError("Failed get total scores");
-            }
-            else
-            {
-                DataSnapshot dataSnapshot = task.Result;
-                foreach (DataSnapshot user in dataSnapshot.Children)
-                {
-                    TrUserData data = JsonUtility.FromJson<TrUserData>(user.GetRawJsonValue());
-                    TrTotalScore add = new TrTotalScore();
-                    add.nickname = data.nickName;
-                    add.maxScore = data.maxScore;
-                    tempStack.Push(add);
-                }
-                isExec = false;
-            }
-        });
+        bool isDone = false;
+        string url = SupabaseClient.RestUrl("users", "select=nickname,max_score&order=max_score.desc&limit=50");
 
-        yield return new WaitUntil(() => !isExec);
+        yield return SupabaseClient.Get(url,
+            onSuccess: json =>
+            {
+                var list = ParseArray<SupabaseTotalScore>(json);
+                _liTotalScores = new List<TrTotalScore>();
+                foreach (var item in list)
+                    _liTotalScores.Add(new TrTotalScore { nickname = item.nickname, maxScore = item.max_score });
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed get total scores: " + err); isDone = true; });
 
-        _liTotalScores = new List<TrTotalScore>();
-        while (tempStack.Count() > 0)
-        {
-            _liTotalScores.Add(tempStack.Pop());
-        }
+        yield return new WaitUntil(() => isDone);
     }
 
     public IEnumerator zSetMaxScore()
     {
-        bool isExec = true;
+        bool isDone = false;
+        string url  = SupabaseClient.RestUrl("users", $"id=eq.{_uid}");
+        string json = $"{{\"max_score\":{_myDatas.maxScore}}}";
 
-        Dictionary<string, object> childUpdate = new Dictionary<string, object>();
-        childUpdate[string.Format("{0}{1}", '/', TrProjectSettings.MAXSCORE)] = _myDatas.maxScore;
-        _uidReference.UpdateChildrenAsync(childUpdate).ContinueWith(task => {
-            if (task.IsFaulted)
-                Debug.Log("Failed Set my scores");
-            else
-                isExec = false;
-        });
+        yield return SupabaseClient.Patch(url, json,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("Failed set max score: " + err); isDone = true; });
 
-        yield return new WaitUntil(() => !isExec);
+        yield return new WaitUntil(() => isDone);
     }
 
     public IEnumerator zSetMyScores()
     {
-        bool isExec = true;
-        TrMySocres scores = new TrMySocres();
+        bool isDone = false;
+        string url  = SupabaseClient.RestUrl("user_scores", $"user_id=eq.{_uid}");
+        string json = $"{{\"score1\":{_liMyScores[0]},\"score2\":{_liMyScores[1]}," +
+                      $"\"score3\":{_liMyScores[2]},\"score4\":{_liMyScores[3]},\"score5\":{_liMyScores[4]}}}";
 
-        scores.score1 = _liMyScores[0];
-        scores.score2 = _liMyScores[1];
-        scores.score3 = _liMyScores[2];
-        scores.score4 = _liMyScores[3];
-        scores.score5 = _liMyScores[4];
+        yield return SupabaseClient.Patch(url, json,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("Failed set scores: " + err); isDone = true; });
 
-        string json = JsonUtility.ToJson(scores);
-        _uidReference.Child(TrProjectSettings.SCORES).SetRawJsonValueAsync(json).ContinueWith(task => {
-            if (task.IsFaulted)
-                Debug.Log("Failed Set my scores");
-            else
-                isExec = false;
-        });
-
-        yield return new WaitUntil(() => !isExec);
+        yield return new WaitUntil(() => isDone);
     }
+
     #endregion
+
     #region UserData
+
     public void zSetUserIDReference(string id)
     {
-        _uidReference = _rootReference.Child(id);
+        // Supabase는 별도 reference 불필요
     }
 
     public IEnumerator zGetMyData(string uid)
     {
-        bool isRead = true;
-        _rootReference.Child(uid).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.Log("Failed Get Data");
-            }
-            else
-            {
-                DataSnapshot snapshot = task.Result;
-                if (snapshot.Value != null)
-                {
-                    var user = JsonUtility.FromJson<TrUserData>(snapshot.GetRawJsonValue());
-                    _myDatas = user;
-                    zSetUserIDReference(_myDatas.userId);
-                }
-                else
-                {
-                    _myDatas = null;
-                }
-                isRead = false;
-            }
-        });
+        bool isDone = false;
+        string url  = SupabaseClient.RestUrl("users", $"id=eq.{uid}");
 
-        yield return new WaitUntil(() => !isRead);
+        yield return SupabaseClient.Get(url,
+            onSuccess: json =>
+            {
+                var list = ParseArray<SupabaseUser>(json);
+                _myDatas = list.Count > 0 ? list[0].ToTrUserData() : null;
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed get user data: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
+
     public IEnumerator zSetMyData()
     {
-        TrUserData user = new TrUserData
-        {
-            userId = AuthManager.User.UserId,
-            email = AuthManager.User.Email,
-            nickName = "",
-            stamina = StaminaManager._maxStamina,
-            staminaDate = "",
-            maxScore = 0,
-        };
+        bool isDone = false;
 
-        string json = JsonUtility.ToJson(user);
+        int platformType = PlayerPrefs.GetInt(TrProjectSettings.AUTOLOGINPLATFORM, 0);
 
-        bool isRead = true;
-        _rootReference.Child(AuthManager.User.UserId).SetRawJsonValueAsync(json).ContinueWith(task =>
-        {
-            if (!task.IsFaulted)
+        string url  = SupabaseClient.RestUrl("users");
+        string json = $"{{\"id\":\"{AuthManager._userId}\"," +
+                      $"\"email\":\"{AuthManager._userEmail ?? ""}\"," +
+                      $"\"nickname\":\"\"," +
+                      $"\"stamina\":{StaminaManager._maxStamina}," +
+                      $"\"max_score\":0," +
+                      $"\"platform_type\":{platformType}}}";
+
+        yield return SupabaseClient.Post(url, json,
+            onSuccess: _ =>
             {
-                _myDatas = user;
-                zSetUserIDReference(_myDatas.userId);
-                AuthManager._userId = _myDatas.userId;
-                isRead = false;
-            }
-            else
-            {
-                Debug.Log(task.Exception);
-            }
-        });
+                _myDatas = new TrUserData
+                {
+                    userId      = AuthManager._userId,
+                    email       = AuthManager._userEmail ?? "",
+                    nickName    = "",
+                    stamina     = StaminaManager._maxStamina,
+                    staminaDate = "",
+                    maxScore    = 0
+                };
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed set user data: " + err); isDone = true; });
 
-        yield return new WaitUntil(() => !isRead);
+        yield return new WaitUntil(() => isDone);
+
+        // 초기 점수 레코드 생성
+        isDone = false;
+        string scoresUrl  = SupabaseClient.RestUrl("user_scores");
+        string scoresJson = $"{{\"user_id\":\"{_uid}\"," +
+                            $"\"score1\":0,\"score2\":0,\"score3\":0,\"score4\":0,\"score5\":0}}";
+
+        yield return SupabaseClient.Post(scoresUrl, scoresJson,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("Failed init scores: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
 
     public IEnumerator zPutNickname(string nick)
     {
-        _isSuccess = true;
-        bool isFind = true;
-        _rootReference.GetValueAsync().ContinueWith(task => {
-            if (task.IsFaulted)
+        _isSuccess = false;
+        bool isDone = false;
+
+        // 닉네임 중복 체크
+        string checkUrl = SupabaseClient.RestUrl("users", $"nickname=eq.{nick}");
+
+        yield return SupabaseClient.Get(checkUrl,
+            onSuccess: json =>
             {
-                Debug.LogError("Failed get users data");
-            }
-            else
-            {
-                DataSnapshot dataSnapshot = task.Result;
-                foreach (DataSnapshot snap in dataSnapshot.Children)
-                {
-                    TrUserData user = JsonUtility.FromJson<TrUserData>(snap.GetRawJsonValue());
+                var list = ParseArray<SupabaseUser>(json);
+                _isSuccess = list.Count == 0;
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed check nickname: " + err); isDone = true; });
 
-                    if (user.nickName == nick)
-                    {
-                        _isSuccess = false;
-                        break;
-                    }
-                }
-                isFind = false;
-            }
-        });
+        yield return new WaitUntil(() => isDone);
+        if (!_isSuccess) yield break;
 
-        yield return new WaitUntil(() => !isFind);
+        // 닉네임 업데이트
+        isDone = false;
+        string url  = SupabaseClient.RestUrl("users", $"id=eq.{_uid}");
+        string json = $"{{\"nickname\":\"{nick}\"}}";
 
-        if (_isSuccess)
-        {
-            _myDatas.nickName = nick;
-            Dictionary<string, object> childUpdate = new Dictionary<string, object>();
-            childUpdate[string.Format("{0}{1}", '/', TrProjectSettings.NICKNAME)] = nick;
-            _uidReference.UpdateChildrenAsync(childUpdate);
-        }
+        yield return SupabaseClient.Patch(url, json,
+            onSuccess: _ => { _myDatas.nickName = nick; isDone = true; },
+            onError: err => { Debug.LogError("Failed set nickname: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
+
     public IEnumerator zDeleteUserData()
     {
-        bool isExec = true;
-        _uidReference.RemoveValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.LogError("remove error");
-            }
-            else
-            {
-                isExec = false;
-                //Debug.Log("succesed remove");
-            }
-        });
+        bool isDone = false;
 
-        yield return new WaitUntil(() => !isExec);
+        // user_scores 먼저 삭제 (FK 제약)
+        yield return SupabaseClient.Delete(
+            SupabaseClient.RestUrl("user_scores", $"user_id=eq.{_uid}"),
+            onSuccess: () => isDone = true,
+            onError: err => { Debug.LogError("Failed delete scores: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
+
+        isDone = false;
+        yield return SupabaseClient.Delete(
+            SupabaseClient.RestUrl("users", $"id=eq.{_uid}"),
+            onSuccess: () => isDone = true,
+            onError: err => { Debug.LogError("Failed delete user: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
 
     public IEnumerator zConnectPlatform(string preUserId, string newUserId)
     {
-        bool isExec = true;
-        TrUserData tempUserData = null;
-        _rootReference.Child(preUserId).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-                Debug.LogError("(Connect) failed get userdata");
-            else
+        // 1. 게스트 데이터 조회
+        bool isDone = false;
+        TrUserData guestData = null;
+        string getUrl = SupabaseClient.RestUrl("users", $"id=eq.{preUserId}");
+
+        yield return SupabaseClient.Get(getUrl,
+            onSuccess: json =>
             {
-                DataSnapshot dataSnapshot = task.Result;
-                TrUserData user = JsonUtility.FromJson<TrUserData>(dataSnapshot.GetRawJsonValue());
+                var list = ParseArray<SupabaseUser>(json);
+                if (list.Count > 0) guestData = list[0].ToTrUserData();
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("(Connect) failed get guest data: " + err); isDone = true; });
 
-                tempUserData = user;
-                tempUserData.userId = newUserId;
-                tempUserData.email = AuthManager.User.Email;
-                isExec = false;
-            }
-        });
-        yield return new WaitUntil(() => !isExec);
+        yield return new WaitUntil(() => isDone);
+        if (guestData == null) yield break;
 
+        // 2. 새 유저 레코드에 게스트 데이터 반영
+        isDone = false;
+        string patchUrl  = SupabaseClient.RestUrl("users", $"id=eq.{newUserId}");
+        string patchJson = $"{{\"nickname\":\"{guestData.nickName}\"," +
+                           $"\"stamina\":{guestData.stamina}," +
+                           $"\"max_score\":{guestData.maxScore}}}";
 
-        isExec = true;
-        string json = JsonUtility.ToJson(tempUserData);
-        _rootReference.Child(newUserId).SetRawJsonValueAsync(json).ContinueWith(task => {
-            if (task.IsFaulted)
-                Debug.LogError("(Connect) failed set new userdata");
-            else
-            {
-                //Debug.Log("(Connect) Succeed set new userdata");
-                isExec = false;
-            }
-        });
-        yield return new WaitUntil(() => !isExec);
+        yield return SupabaseClient.Patch(patchUrl, patchJson,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("(Connect) failed patch new user: " + err); isDone = true; });
 
-        isExec = true;
-        _rootReference.Child(preUserId).RemoveValueAsync().ContinueWith(task => {
-            if (task.IsFaulted)
-                Debug.LogError("(Connect) Failed remove userdata");
-            else
-            {
-                //Debug.Log("Succeed remove userdata");
-                isExec = false;
-            }
-        });
-        yield return new WaitUntil(() => !isExec);
+        yield return new WaitUntil(() => isDone);
+
+        // 3. user_scores user_id 업데이트 (preUserId → newUserId)
+        isDone = false;
+        string scoresUrl  = SupabaseClient.RestUrl("user_scores", $"user_id=eq.{preUserId}");
+        string scoresJson = $"{{\"user_id\":\"{newUserId}\"}}";
+
+        yield return SupabaseClient.Patch(scoresUrl, scoresJson,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("(Connect) failed update scores: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
+
+        // 4. 게스트 유저 삭제
+        isDone = false;
+        yield return SupabaseClient.Delete(
+            SupabaseClient.RestUrl("users", $"id=eq.{preUserId}"),
+            onSuccess: () => isDone = true,
+            onError: err => { Debug.LogError("(Connect) failed delete guest: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
 
     #endregion
+
     #region Stamina
+
     public IEnumerator zSetStamina()
     {
-        bool isExec = true;
-        Dictionary<string, object> childUpdate = new Dictionary<string, object>();
-        childUpdate[string.Format("{0}{1}", '/', TrProjectSettings.STAMINA)] = _myDatas.stamina;
-        childUpdate[string.Format("{0}{1}", '/', TrProjectSettings.STAMINADATE)] = _myDatas.staminaDate;
-        _uidReference.UpdateChildrenAsync(childUpdate).ContinueWith(task => {
-            if (task.IsFaulted)
-                Debug.Log("Failed set stamina");
-            else
-                isExec = false;
-        });
+        bool isDone = false;
+        string url  = SupabaseClient.RestUrl("users", $"id=eq.{_uid}");
 
-        yield return new WaitUntil(() => !isExec);
+        // staminaDate가 비어있으면 null로 전송
+        string staminaDateJson = string.IsNullOrEmpty(_myDatas.staminaDate)
+            ? "null"
+            : $"\"{_myDatas.staminaDate}\"";
+
+        string json = $"{{\"stamina\":{_myDatas.stamina},\"stamina_updated_at\":{staminaDateJson}}}";
+
+        yield return SupabaseClient.Patch(url, json,
+            onSuccess: _ => isDone = true,
+            onError: err => { Debug.LogError("Failed set stamina: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
+
     #endregion
 
     public IEnumerator zCheckVersion()
     {
-        bool isRead = true;
-        _isSuccess = false;
-        string thisVerison = Application.version;
-        _versionReference.Child(TrProjectSettings._character).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsFaulted)
-            {
-                Debug.LogError("Failed get version info");
-            }
-            else
-            {
-                //string getVersion = task.Result.Value.ToString();
-                DataSnapshot snap = task.Result;
-                string getVersion = snap.Value.ToString();
-                if (getVersion.CompareTo(thisVerison) == 0)
-                {
-                    _isSuccess = true;
-                }
-                else
-                {
-                    _isSuccess = false;
-                }
-                isRead = false;
-            }
-        });
+        bool isDone = false;
+        _isSuccess  = false;
 
-        yield return new WaitUntil(() => !isRead);
+        string platform = TrProjectSettings.GOOGLE;
+#if PLATFORM_IOS
+        platform = TrProjectSettings.APPLE;
+#endif
+
+        string thisVersion = Application.version;
+        string url = SupabaseClient.RestUrl("app_versions",
+            $"character=eq.{TrProjectSettings._character}&platform=eq.{platform}");
+
+        yield return SupabaseClient.Get(url,
+            onSuccess: json =>
+            {
+                var list = ParseArray<SupabaseVersion>(json);
+                if (list.Count > 0)
+                    _isSuccess = list[0].version == thisVersion;
+                isDone = true;
+            },
+            onError: err => { Debug.LogError("Failed get version: " + err); isDone = true; });
+
+        yield return new WaitUntil(() => isDone);
     }
 }
 
+#region Supabase DTOs
+
+[Serializable]
+class JsonWrapper<T>
+{
+    public List<T> items;
+}
+
+[Serializable]
+class SupabaseUser
+{
+    public string id;
+    public string email;
+    public string nickname;
+    public int    stamina;
+    public string stamina_updated_at;
+    public int    max_score;
+    public int    platform_type;
+
+    public TrUserData ToTrUserData() => new TrUserData
+    {
+        userId      = id,
+        email       = email,
+        nickName    = nickname,
+        stamina     = stamina,
+        staminaDate = stamina_updated_at ?? "",
+        maxScore    = max_score
+    };
+}
+
+[Serializable]
+class SupabaseUserScores
+{
+    public string user_id;
+    public int    score1;
+    public int    score2;
+    public int    score3;
+    public int    score4;
+    public int    score5;
+}
+
+[Serializable]
+class SupabaseTotalScore
+{
+    public string nickname;
+    public int    max_score;
+}
+
+[Serializable]
+class SupabaseVersion
+{
+    public string version;
+}
+
+#endregion
+
 #region TeraDB DTOs
+
 [Serializable]
 public class TrUserData
 {
     public string userId;
     public string email;
     public string nickName;
-    public int stamina;
+    public int    stamina;
     public string staminaDate;
-    public int maxScore;
+    public int    maxScore;
 }
 
 [Serializable]
@@ -467,7 +430,7 @@ public class TrMySocres
 public class TrTotalScore
 {
     public string nickname;
-    public int maxScore;
+    public int    maxScore;
 }
 
 #endregion
