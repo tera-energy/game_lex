@@ -6,12 +6,14 @@ public class TrProjectSettings
 
 #if PLATFORM_IOS
     public static string _urlStore = "https://apps.apple.com/kr/app/lexburger/id1640609659";
-#endif
-#if PLATFORM_ANDROID
+#elif PLATFORM_ANDROID
 	public static string _urlStore = "https://play.google.com/store/apps/details?id=com.blazar.lex";
     public static string _googleUrl = "https://play.google.com/store/apps/details?id=com.blazar.lex";
     public static string _oneUrl = "https://m.onestore.co.kr/mobilepoc/apps/appsDetail.omp?prodId=0000764807";
+#else
+    public static string _urlStore = "https://play.google.com/store/apps/details?id=com.blazar.lex";
 #endif
+
     public static string _subjectForShare = "[Brainbow Arcade] 브레인보우 아케이드 렉스버거";
     public static string _contentForShare = "[Brainbow Arcade] 브레인보우 아케이드 렉스버거에 초대합니다!!!";
 

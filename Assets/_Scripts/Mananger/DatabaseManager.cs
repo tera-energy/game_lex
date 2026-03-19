@@ -75,11 +75,9 @@ public class DatabaseManager : MonoBehaviour
         }
 
 
-#if PLATFORM_ANDROID
         string platform = TrProjectSettings.GOOGLE;
-#endif
 #if PLATFORM_IOS
-        string platform = TrProjectSettings.APPLE;
+        platform = TrProjectSettings.APPLE;
 #endif
 
         _rootReference = FirebaseDatabase.DefaultInstance.RootReference.Child(TrProjectSettings._character + "User");
