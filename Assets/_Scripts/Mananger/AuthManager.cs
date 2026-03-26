@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using Google;
-#if PLATFORM_IOS
+#if UNITY_IOS
 using AppleAuth;
 using AppleAuth.Native;
 using AppleAuth.Enums;
@@ -22,7 +22,7 @@ public class AuthManager : MonoBehaviour
     static AuthManager _instance;
     static public AuthManager xInstance { get { return _instance; } }
 
-    public bool IsFirebaseReady { get; private set; }   // 이름 유지 (TrLobbyManager 호환)
+    public bool IsReady { get; private set; }
     public bool IsSignInOnProgress { get; private set; }
 
     public static string _userId;
@@ -49,7 +49,7 @@ public class AuthManager : MonoBehaviour
 
     static GoogleSignInConfiguration _configuration;
 
-#if PLATFORM_IOS
+#if UNITY_IOS
     IAppleAuthManager _appleAuthManager;
 #endif
 
@@ -77,7 +77,7 @@ public class AuthManager : MonoBehaviour
     // ──────────────────────────────────────────
     public void zGuestLogin()
     {
-        if (!IsFirebaseReady || IsSignInOnProgress || _userId != null) return;
+        if (!IsReady || IsSignInOnProgress || _userId != null) return;
 
         TT.zSetInteractButtons(ref _btnSignIns, false);
         TrAudio_UI.xInstance.zzPlay_ClickButtonNormal();
@@ -122,8 +122,8 @@ public class AuthManager : MonoBehaviour
     // ──────────────────────────────────────────
     public void zAppleSignIn()
     {
-#if PLATFORM_IOS
-        if (!IsFirebaseReady || IsSignInOnProgress || _userId != null) return;
+#if UNITY_IOS
+        if (!IsReady || IsSignInOnProgress || _userId != null) return;
 
         TT.zSetInteractButtons(ref _btnSignIns, false);
         TrAudio_UI.xInstance.zzPlay_ClickButtonNormal();
@@ -133,7 +133,7 @@ public class AuthManager : MonoBehaviour
 #endif
     }
 
-#if PLATFORM_IOS
+#if UNITY_IOS
     string yGenerateNonce(string rawNonce)
     {
         SHA256 sha = new SHA256Managed();
@@ -248,7 +248,7 @@ public class AuthManager : MonoBehaviour
     // ──────────────────────────────────────────
     public void zGoogleSignIn()
     {
-        if (!IsFirebaseReady || IsSignInOnProgress || _userId != null) return;
+        if (!IsReady || IsSignInOnProgress || _userId != null) return;
 
         TT.zSetInteractButtons(ref _btnSignIns, false);
         TrAudio_UI.xInstance.zzPlay_ClickButtonNormal();
@@ -263,34 +263,57 @@ public class AuthManager : MonoBehaviour
 
     IEnumerator yGoogleSignInCoroutine()
     {
+        yNotice("Google SignIn Start...");
         var task = GoogleSignIn.DefaultInstance.SignIn();
-        yield return new WaitUntil(() => task.IsCompleted);
+
+        float timeout = 0f;
+        while (!task.IsCompleted)
+        {
+            timeout += Time.deltaTime;
+            if (timeout > 15f)
+            {
+                yNotice("Timeout: task never completed");
+                yCheckSignInResult(false);
+                IsSignInOnProgress = false;
+                yield break;
+            }
+            yield return null;
+        }
+        yNotice("Task completed!");
 
         if (task.IsFaulted)
         {
+            string errMsg = "";
             using (var e = task.Exception.InnerExceptions.GetEnumerator())
             {
                 if (e.MoveNext())
                 {
                     var error = (GoogleSignIn.SignInException)e.Current;
-                    Debug.Log("Google error: " + error.Status + " " + error.Message);
+                    errMsg = $"Faulted: {error.Status} {error.Message}";
+                    Debug.Log("Google error: " + errMsg);
                 }
                 else
                 {
-                    Debug.Log(task.Exception.ToString());
+                    errMsg = task.Exception.ToString();
+                    Debug.Log(errMsg);
                 }
             }
-            yNotice("Failed login to Google");
+            yNotice(errMsg);
             yCheckSignInResult(false);
             IsSignInOnProgress = false;
         }
         else if (task.IsCanceled)
         {
+            yNotice("Canceled");
             yCheckSignInResult(false);
         }
         else
         {
-            yield return StartCoroutine(ySignInWithGoogleOnSupabase(task.Result.IdToken));
+            string idToken = task.Result.IdToken;
+            Debug.Log($"[Google] IdToken null={idToken == null}, length={idToken?.Length ?? 0}");
+            yNotice($"IdToken null={idToken == null}, len={idToken?.Length ?? 0}");
+            yield return new WaitForSeconds(2f);
+            yield return StartCoroutine(ySignInWithGoogleOnSupabase(idToken));
         }
     }
 
@@ -300,9 +323,13 @@ public class AuthManager : MonoBehaviour
         string url  = SupabaseClient.AuthUrl("token?grant_type=id_token");
         string json = $"{{\"provider\":\"google\",\"id_token\":\"{idToken}\"}}";
 
+        Debug.Log($"[SupabaseGoogle] POST {url}");
+
         yield return SupabaseClient.Post(url, json,
             onSuccess: response =>
             {
+                Debug.Log($"[SupabaseGoogle] onSuccess: {response}");
+                yNotice("Supabase OK!");
                 var session = JsonUtility.FromJson<SupabaseSession>(response);
                 if (session != null && session.access_token != "")
                 {
@@ -316,7 +343,7 @@ public class AuthManager : MonoBehaviour
             onError: err =>
             {
                 Debug.LogError("Google Supabase login failed: " + err);
-                yNotice("Failed login to Google");
+                yNotice("ERR: " + err);
                 yCheckSignInResult(false);
                 isDone = true;
             });
@@ -459,7 +486,7 @@ public class AuthManager : MonoBehaviour
         {
             case TrPlatformType.GOOGLE: zGoogleSignIn(); break;
             case TrPlatformType.APPLE:
-#if PLATFORM_IOS
+#if UNITY_IOS
                 zAppleSignIn();
 #endif
                 break;
@@ -606,11 +633,11 @@ public class AuthManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // 초기화 (TrLobbyManager에서 zSetFirebase() 호출)
+    // 초기화 (TrLobbyManager에서 zInitialize() 호출)
     // ──────────────────────────────────────────
-    public void zSetFirebase()
+    public void zInitialize()
     {
-#if PLATFORM_ANDROID || PLATFORM_IOS
+#if UNITY_ANDROID || UNITY_IOS
         if (_configuration == null)
             _configuration = new GoogleSignInConfiguration
             {
@@ -620,7 +647,7 @@ public class AuthManager : MonoBehaviour
             };
 #endif
 
-#if PLATFORM_IOS
+#if UNITY_IOS
         if (AppleAuthManager.IsCurrentPlatformSupported)
         {
             var deserializer = new PayloadDeserializer();
@@ -629,7 +656,7 @@ public class AuthManager : MonoBehaviour
 #endif
 
         IsSignInOnProgress = false;
-        IsFirebaseReady    = true;   // Supabase는 별도 초기화 불필요
+        IsReady            = true;
 
 #if UNITY_EDITOR
         StartCoroutine(yCreateDummyUser());
@@ -687,7 +714,7 @@ public class AuthManager : MonoBehaviour
             Destroy(gameObject);
     }
 
-#if PLATFORM_IOS
+#if UNITY_IOS
     void Update()
     {
         _appleAuthManager?.Update();

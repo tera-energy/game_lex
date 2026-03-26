@@ -22,6 +22,7 @@ public class TrLobbyManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI _txtPersonalRank;
     [SerializeField] TextMeshProUGUI _txtTotalRank;
     [SerializeField] Color _colorPurple;
+    [SerializeField] Color _colorHighlight;
     [SerializeField] Sprite[] _spRanks;
 
     // ��ũ ����(��ü ��ŷ)
@@ -42,6 +43,8 @@ public class TrLobbyManager : MonoBehaviour
     [SerializeField] GameObject _goPersonalRank;
     [SerializeField] Transform _trPersonalRanksParent;
     [SerializeField] Transform _trPersonalBtnTab;
+    [SerializeField] GameObject _goNoScoreMyText;
+    [SerializeField] GameObject _goNoScoreTotalText;
 
     // �޴� ��
     [Space]
@@ -248,32 +251,45 @@ public class TrLobbyManager : MonoBehaviour
     }
 
     IEnumerator ySetPersonalRankBaord(){
+        _goNoScoreMyText?.SetActive(false);
+
         if (DatabaseManager._liMyScores == null)
             yield return StartCoroutine(DatabaseManager.xInstance.zGetDataMyScores());
 
         TrPlayRankListBox[] rankUIs = _trPersonalRanksParent.GetComponentsInChildren<TrPlayRankListBox>();
 
         List<int> rankList = DatabaseManager._liMyScores;
-        int listCount;
-        if (rankList == null)
-            listCount = 0;
-        else
-            listCount = rankList.Count;
-
+        int listCount = rankList == null ? 0 : rankList.Count;
         string nickname = DatabaseManager._myDatas.nickName;
 
-        for (int i = 0; i < listCount; i++)
-        {
-            TrPlayRankListBox uis = rankUIs[i];
-            uis._txtScore.text = string.Format("{0}P", rankList[i].ToString());
-            uis._txtName.text = nickname;
-        }
+        // -1이 아닌 항목만 실제 플레이 점수
+        int validCount = 0;
+        if (rankList != null)
+            for (int i = 0; i < listCount; i++)
+                if (rankList[i] != -1) validCount++;
+                else break;
 
-        for (int i = listCount; i < 5; i++)
+        bool hasPlayed = validCount > 0;
+        _goNoScoreMyText?.SetActive(!hasPlayed);
+        _trPersonalRanksParent.gameObject.SetActive(hasPlayed);
+
+        if (hasPlayed)
         {
-            TrPlayRankListBox uis = rankUIs[i];
-            uis._txtScore.text = "0";
-            uis._txtName.text = nickname;
+            // 실제 플레이 횟수만큼만 표시, 나머지 슬롯은 비활성화
+            for (int i = 0; i < 5; i++)
+            {
+                TrPlayRankListBox uis = rankUIs[i];
+                if (i < validCount)
+                {
+                    uis.gameObject.SetActive(true);
+                    uis._txtScore.text = string.Format("{0}P", rankList[i].ToString());
+                    uis._txtName.text = nickname;
+                }
+                else
+                {
+                    uis.gameObject.SetActive(false);
+                }
+            }
         }
     }
 
@@ -291,6 +307,8 @@ public class TrLobbyManager : MonoBehaviour
     // ��ü ��ŷ ����
     IEnumerator ySetTotalRankBoard()
     {
+        _goNoScoreTotalText?.SetActive(false);
+
         yield return StartCoroutine(DatabaseManager.xInstance.zGetDataTotalScores());
 
         if (DatabaseManager.xInstance._liTotalScores.Count != 0)
@@ -302,8 +320,6 @@ public class TrLobbyManager : MonoBehaviour
             int rank = 0;
             int index = 0;
             string ownName = DatabaseManager._myDatas.nickName;
-            _rankBoxOwn._txtName.text = ownName;
-            _rankBoxOwn._txtScore.text = string.Format("{0}P", DatabaseManager._myDatas.maxScore.ToString());
             while (index < _numRanks && index < listCount)
             {
                 var user = li[index];
@@ -314,57 +330,70 @@ public class TrLobbyManager : MonoBehaviour
                 box.gameObject.SetActive(true);
                 box.SetParent(_trTotalRanksParent);
                 box.localScale = new Vector3(1f, 1f, 1f);
-                TrPlayRankListBox list = box.GetComponent<TrPlayRankListBox>();
-                list._txtName.text = name;
-                list._txtScore.text = string.Format("{0}P", score);
-                list._imgValueRanking.gameObject.SetActive(true);
-                list._txtValueRanking.text = "";
-                if (rank == 0) list._imgValueRanking.sprite = _spRanks[rank];
-                else if (rank == 1) list._imgValueRanking.sprite = _spRanks[rank];
-                else if (rank == 2) list._imgValueRanking.sprite = _spRanks[rank];
+                TrPlayRankListBox listBox = box.GetComponent<TrPlayRankListBox>();
+                listBox._txtName.text = name;
+                listBox._txtScore.text = string.Format("{0}P", score);
+                listBox._imgValueRanking.gameObject.SetActive(true);
+                listBox._txtValueRanking.text = "";
+                if (rank == 0) listBox._imgValueRanking.sprite = _spRanks[rank];
+                else if (rank == 1) listBox._imgValueRanking.sprite = _spRanks[rank];
+                else if (rank == 2) listBox._imgValueRanking.sprite = _spRanks[rank];
                 else
                 {
-                    list._imgValueRanking.gameObject.SetActive(false);
-                    list._txtValueRanking.text = (rank + 1).ToString();
+                    listBox._imgValueRanking.gameObject.SetActive(false);
+                    listBox._txtValueRanking.text = (rank + 1).ToString();
                 }
-                if (name == ownName) yourRanking = rank;
+
+                // 내 항목 하이라이트
+                if (name == ownName)
+                {
+                    yourRanking = rank;
+                    // if (listBox._imgBg != null)
+                    //     listBox._imgBg.color = _colorHighlight;
+                }
+
                 rank++;
                 index++;
             }
 
+            // 하단 고정 박스 — 항상 표시
+            _rankBoxOwn.gameObject.SetActive(true);
+            _rankBoxOwn._txtName.text = ownName;
+            _rankBoxOwn._txtScore.text = string.Format("{0}P", DatabaseManager._myDatas.maxScore.ToString());
+
             Image imgRank = _rankBoxOwn._imgValueRanking;
             TextMeshProUGUI txtRank = _rankBoxOwn._txtValueRanking;
 
-            if (yourRanking <= 2 && yourRanking >= 0)
+            if (yourRanking >= 0)
             {
-                txtRank.text = "";
-                imgRank.gameObject.SetActive(true);
-                imgRank.sprite = _spRanks[yourRanking];
+                // 리스트 안에 있음 → 정확한 순위 표시
+                if (yourRanking < 3)
+                {
+                    imgRank.gameObject.SetActive(true);
+                    imgRank.sprite = _spRanks[yourRanking];
+                    txtRank.text = "";
+                }
+                else
+                {
+                    imgRank.gameObject.SetActive(false);
+                    txtRank.gameObject.SetActive(true);
+                    txtRank.text = (yourRanking + 1).ToString();
+                    txtRank.fontSize = 35;
+                }
             }
-            else if (yourRanking == -1)
+            else
             {
+                // 리스트 밖
                 imgRank.gameObject.SetActive(false);
                 txtRank.gameObject.SetActive(true);
                 txtRank.text = "-";
                 txtRank.fontSize = 35;
             }
-            else
-            {
-                imgRank.gameObject.SetActive(false);
-                txtRank.gameObject.SetActive(true);
-                txtRank.text = (yourRanking + 1).ToString();
-                txtRank.fontSize = 70;
-            }
         }
         else
         {
-            string ownName = DatabaseManager._myDatas.nickName;
-            _rankBoxOwn._txtName.text = ownName;
-            _rankBoxOwn._txtScore.text = "-";
-            _rankBoxOwn._txtValueRanking.text = "-";
-            _rankBoxOwn._imgValueRanking.gameObject.SetActive(false);
-            _txtAnnounce.text = "No Ranks";
-
+            _rankBoxOwn.gameObject.SetActive(false);
+            _goNoScoreTotalText?.SetActive(true);
         }
 
         _goRanks.SetActive(true);
@@ -440,7 +469,7 @@ public class TrLobbyManager : MonoBehaviour
 
             _targetValue = 0.3f;
 
-            AuthManager.xInstance.zSetFirebase();
+            AuthManager.xInstance.zInitialize();
             yield return new WaitUntil(() => AuthManager.xInstance._isCheckAutoSignIn);
             _targetValue = 0.6f;
 
