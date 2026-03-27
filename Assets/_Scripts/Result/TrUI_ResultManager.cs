@@ -194,6 +194,16 @@ public class TrUI_ResultManager : MonoBehaviour
                 {
                     if (i >= 5) break;
 
+                    // -1은 빈 슬롯 → 이 자리에 새 점수 삽입
+                    if (DatabaseManager._liMyScores[i] == -1)
+                    {
+                        isChangeMyScore = true;
+                        DatabaseManager._liMyScores[i] = score;
+                        break;
+                    }
+
+                    if (DatabaseManager._liMyScores[i] == score) break;
+
                     if (DatabaseManager._liMyScores[i] < score)
                     {
                         isChangeMyScore = true;
@@ -209,7 +219,7 @@ public class TrUI_ResultManager : MonoBehaviour
             for (int i = DatabaseManager._liMyScores.Count; i < 5; i++)
             {
                 if (!isChangeMyScore) isChangeMyScore = true;
-                DatabaseManager._liMyScores.Add(0);
+                DatabaseManager._liMyScores.Add(-1);
             }
 
             if (isChangeMyScore)

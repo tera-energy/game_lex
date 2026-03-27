@@ -74,7 +74,7 @@ public class DatabaseManager : MonoBehaviour
     public IEnumerator zGetDataTotalScores()
     {
         bool isDone = false;
-        string url = SupabaseClient.RestUrl("users", "select=nickname,max_score&order=max_score.desc&limit=50");
+        string url = SupabaseClient.RestUrl("users", "select=nickname,max_score&max_score=gt.0&order=max_score.desc&limit=50");
 
         yield return SupabaseClient.Get(url,
             onSuccess: json =>
@@ -106,11 +106,12 @@ public class DatabaseManager : MonoBehaviour
     public IEnumerator zSetMyScores()
     {
         bool isDone = false;
-        string url  = SupabaseClient.RestUrl("user_scores", $"user_id=eq.{_uid}");
-        string json = $"{{\"score1\":{_liMyScores[0]},\"score2\":{_liMyScores[1]}," +
+        string url  = SupabaseClient.RestUrl("user_scores", "on_conflict=user_id");
+        string json = $"{{\"user_id\":\"{_uid}\"," +
+                      $"\"score1\":{_liMyScores[0]},\"score2\":{_liMyScores[1]}," +
                       $"\"score3\":{_liMyScores[2]},\"score4\":{_liMyScores[3]},\"score5\":{_liMyScores[4]}}}";
 
-        yield return SupabaseClient.Patch(url, json,
+        yield return SupabaseClient.Upsert(url, json,
             onSuccess: _ => isDone = true,
             onError: err => { Debug.LogError("Failed set scores: " + err); isDone = true; });
 
@@ -172,18 +173,6 @@ public class DatabaseManager : MonoBehaviour
                 isDone = true;
             },
             onError: err => { Debug.LogError("Failed set user data: " + err); isDone = true; });
-
-        yield return new WaitUntil(() => isDone);
-
-        // 초기 점수 레코드 생성
-        isDone = false;
-        string scoresUrl  = SupabaseClient.RestUrl("user_scores");
-        string scoresJson = $"{{\"user_id\":\"{_uid}\"," +
-                            $"\"score1\":0,\"score2\":0,\"score3\":0,\"score4\":0,\"score5\":0}}";
-
-        yield return SupabaseClient.Post(scoresUrl, scoresJson,
-            onSuccess: _ => isDone = true,
-            onError: err => { Debug.LogError("Failed init scores: " + err); isDone = true; });
 
         yield return new WaitUntil(() => isDone);
     }

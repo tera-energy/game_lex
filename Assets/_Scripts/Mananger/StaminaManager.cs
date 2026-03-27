@@ -12,11 +12,11 @@ public class StaminaManager : MonoBehaviour
 
 
 
-    public static int _maxStamina = 5;      // ÃÖ´ë ½ºÅ×¹Ì³ª °³¼ö
+    public static int _maxStamina = 5;      // ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½×¹Ì³ï¿½ ï¿½ï¿½ï¿½ï¿½
     //public static int DatabaseManager._myDatas.staminaTemp;
-    static int _coolTimeMinute = 15;   // ÃÑ ÄðÅ¸ÀÓÀÌ ¸î ºÐÀÎÁö
-    float _maxCoolTimeSecond;               // ÃÑ ÄðÅ¸ÀÓ(ÃÊ)
-    float _currCoolTimeSecond;              // ÇöÀç ÄðÅ¸ÀÓ
+    static int _coolTimeMinute = 15;   // ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    float _maxCoolTimeSecond;               // ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½(ï¿½ï¿½)
+    float _currCoolTimeSecond;              // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½
 
     // UI
     [SerializeField] GameObject _goStamina;
@@ -64,6 +64,12 @@ public class StaminaManager : MonoBehaviour
 
     public IEnumerator zCheckStamina(Action successMethod = null, Action failedMethod = null)
     {
+#if DEVELOPMENT_BUILD
+        // ê°œë°œ ë¹Œë“œì—ì„œëŠ” ìŠ¤íƒœë¯¸ë‚˜ ì†Œëª¨ ì—†ì´ ë¬´ì œí•œ í”Œë ˆì´
+        GameManager._type = TT.enumGameType.Challenge;
+        successMethod?.Invoke();
+        yield break;
+#endif
         if (DatabaseManager._myDatas.stamina > 0)
         {
             GameManager._type = TT.enumGameType.Challenge;
