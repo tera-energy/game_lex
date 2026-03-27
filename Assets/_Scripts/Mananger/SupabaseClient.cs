@@ -6,8 +6,26 @@ using UnityEngine.Networking;
 
 public static class SupabaseClient
 {
-    public const string ProjectUrl = "https://lrjdyfoumqxmtobozmdh.supabase.co";
-    public const string AnonKey    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyamR5Zm91bXF4bXRvYm96bWRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MTc3NTUsImV4cCI6MjA4OTM5Mzc1NX0.ooLm3UEK0YkZeTico72OAVlfEYUOfj5AAGE1wXwU0B0";
+    // projectUrl: https://lrjdyfoumqxmtobozmdh.supabase.co
+    // anonKey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (JWT — see SupabaseConfig asset)
+
+    static TrSupabaseConfig _config;
+    static TrSupabaseConfig Config
+    {
+        get
+        {
+            if (_config == null)
+            {
+                _config = Resources.Load<TrSupabaseConfig>("SupabaseConfig");
+                if (_config == null)
+                    Debug.LogError("SupabaseConfig asset not found in Resources/");
+            }
+            return _config;
+        }
+    }
+
+    static string ProjectUrl => Config?.projectUrl ?? "";
+    static string AnonKey    => Config?.anonKey    ?? "";
 
     public static string AccessToken { get; set; } = "";
 
@@ -38,7 +56,7 @@ public static class SupabaseClient
         if (req.result == UnityWebRequest.Result.Success)
             onSuccess?.Invoke(req.downloadHandler.text);
         else
-            onError?.Invoke(req.error);
+            onError?.Invoke($"[{req.responseCode}] {req.error} | {req.downloadHandler.text}");
     }
 
     // POST
@@ -53,7 +71,7 @@ public static class SupabaseClient
         if (req.result == UnityWebRequest.Result.Success)
             onSuccess?.Invoke(req.downloadHandler.text);
         else
-            onError?.Invoke(req.error);
+            onError?.Invoke($"[{req.responseCode}] {req.error} | {req.downloadHandler.text}");
     }
 
     // PATCH
@@ -68,7 +86,24 @@ public static class SupabaseClient
         if (req.result == UnityWebRequest.Result.Success)
             onSuccess?.Invoke(req.downloadHandler.text);
         else
-            onError?.Invoke(req.error);
+            onError?.Invoke($"[{req.responseCode}] {req.error} | {req.downloadHandler.text}");
+    }
+
+    // UPSERT
+    public static IEnumerator Upsert(string url, string json, Action<string> onSuccess, Action<string> onError = null)
+    {
+        using var req = new UnityWebRequest(url, "POST");
+        req.uploadHandler   = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+        req.downloadHandler = new DownloadHandlerBuffer();
+        SetHeaders(req);
+        // Upsert 전용: Prefer 헤더를 merge-duplicates로 덮어쓰기
+        req.SetRequestHeader("Prefer", "resolution=merge-duplicates");
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityWebRequest.Result.Success)
+            onSuccess?.Invoke(req.downloadHandler.text);
+        else
+            onError?.Invoke($"[{req.responseCode}] {req.error} | {req.downloadHandler.text}");
     }
 
     // DELETE
@@ -81,6 +116,6 @@ public static class SupabaseClient
         if (req.result == UnityWebRequest.Result.Success)
             onSuccess?.Invoke();
         else
-            onError?.Invoke(req.error);
+            onError?.Invoke($"[{req.responseCode}] {req.error} | {req.downloadHandler.text}");
     }
 }

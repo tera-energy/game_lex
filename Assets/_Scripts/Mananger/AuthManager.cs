@@ -98,7 +98,7 @@ public class AuthManager : MonoBehaviour
                 if (session != null && session.access_token != "")
                 {
                     SupabaseClient.AccessToken = session.access_token;
-                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, session.refresh_token);
+                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, yEncryptToken(session.refresh_token));
                     _userId    = session.user.id;
                     _userEmail = session.user.email ?? "";
                 }
@@ -219,7 +219,7 @@ public class AuthManager : MonoBehaviour
                 if (session != null && session.access_token != "")
                 {
                     SupabaseClient.AccessToken = session.access_token;
-                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, session.refresh_token);
+                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, yEncryptToken(session.refresh_token));
                     _userId    = session.user.id;
                     _userEmail = session.user.email ?? "";
                 }
@@ -334,7 +334,7 @@ public class AuthManager : MonoBehaviour
                 if (session != null && session.access_token != "")
                 {
                     SupabaseClient.AccessToken = session.access_token;
-                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, session.refresh_token);
+                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, yEncryptToken(session.refresh_token));
                     _userId    = session.user.id;
                     _userEmail = session.user.email ?? "";
                 }
@@ -587,6 +587,7 @@ public class AuthManager : MonoBehaviour
     {
         string refreshToken = PlayerPrefs.GetString(KEY_REFRESH_TOKEN, "");
         if (refreshToken == "") yield break;
+        refreshToken = yDecryptToken(refreshToken);
 
         bool isDone = false;
         string url  = SupabaseClient.AuthUrl("token?grant_type=refresh_token");
@@ -599,7 +600,7 @@ public class AuthManager : MonoBehaviour
                 if (session != null && session.access_token != "")
                 {
                     SupabaseClient.AccessToken = session.access_token;
-                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, session.refresh_token);
+                    PlayerPrefs.SetString(KEY_REFRESH_TOKEN, yEncryptToken(session.refresh_token));
                     _userEmail = session.user.email ?? "";
                 }
                 isDone = true;
@@ -693,6 +694,76 @@ public class AuthManager : MonoBehaviour
     public void zSetBtnsConnect()
     {
         TT.zSetInteractButtons(ref _btnConnects, _isGuest);
+    }
+
+    // ──────────────────────────────────────────
+    // refresh_token 암호화 / 복호화 (AES-256)
+    // Key: SHA256(Application.identifier + SystemInfo.deviceUniqueIdentifier) → 32바이트
+    // IV : 매 암호화마다 랜덤 16바이트, 암호문 앞에 prepend → Base64 저장
+    // ──────────────────────────────────────────
+    static byte[] yGetAesKey()
+    {
+        string raw = Application.identifier + SystemInfo.deviceUniqueIdentifier;
+        using var sha = SHA256.Create();
+        return sha.ComputeHash(Encoding.UTF8.GetBytes(raw));
+    }
+
+    static string yEncryptToken(string plainText)
+    {
+        try
+        {
+            byte[] key = yGetAesKey();
+            using var aes = Aes.Create();
+            aes.Key     = key;
+            aes.Mode    = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.GenerateIV();
+            byte[] iv = aes.IV;
+
+            using var encryptor = aes.CreateEncryptor();
+            byte[] plain  = Encoding.UTF8.GetBytes(plainText);
+            byte[] cipher = encryptor.TransformFinalBlock(plain, 0, plain.Length);
+
+            // IV(16바이트) + 암호문
+            byte[] result = new byte[iv.Length + cipher.Length];
+            Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+            Buffer.BlockCopy(cipher, 0, result, iv.Length, cipher.Length);
+            return Convert.ToBase64String(result);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("yEncryptToken failed: " + e.Message);
+            return plainText;
+        }
+    }
+
+    static string yDecryptToken(string cipherText)
+    {
+        try
+        {
+            byte[] key  = yGetAesKey();
+            byte[] data = Convert.FromBase64String(cipherText);
+
+            byte[] iv     = new byte[16];
+            byte[] cipher = new byte[data.Length - 16];
+            Buffer.BlockCopy(data, 0, iv, 0, 16);
+            Buffer.BlockCopy(data, 16, cipher, 0, cipher.Length);
+
+            using var aes = Aes.Create();
+            aes.Key     = key;
+            aes.IV      = iv;
+            aes.Mode    = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using var decryptor = aes.CreateDecryptor();
+            byte[] plain = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+            return Encoding.UTF8.GetString(plain);
+        }
+        catch
+        {
+            // 하위 호환: 복호화 실패(기존 평문 토큰 등)는 평문 그대로 반환
+            return cipherText;
+        }
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

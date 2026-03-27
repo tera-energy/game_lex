@@ -186,3 +186,7 @@ Assets/Firebase/Plugins/x86_64/FirebaseCppApp-9_1_0.bundle
 ProjectSettings/ProjectSettings.asset
 firebase-unity-sdk-9.1.0/
 firebase_unity_sdk/
+
+# Supabase config (contains API keys — create manually from Config/Supabase Config menu)
+Assets/Resources/SupabaseConfig.asset
+Assets/Resources/SupabaseConfig.asset.meta
