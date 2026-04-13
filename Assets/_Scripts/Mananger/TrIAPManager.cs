@@ -92,6 +92,11 @@ public class TrIAPManager : MonoBehaviour, IStoreListener
     {
         Debug.Log($"In-App Purchasing initialize failed: {error}");
     }
+
+    public void OnInitializeFailed(InitializationFailureReason error, string message)
+    {
+        Debug.Log($"In-App Purchasing initialize failed: {error}, message: {message}");
+    }
     #endregion
     public void xBuyStamina(int serialNumber)
     {

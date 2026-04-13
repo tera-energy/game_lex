@@ -15,6 +15,10 @@ public class TrPuzzleHamburger : TrPuzzleManager
     static TrPuzzleHamburger _instance;
     public static TrPuzzleHamburger xInstance { get { return _instance; } }
 
+    public event System.Action OnBurgerCompleted;
+    public event System.Action OnBurgerFailed;
+    public int NumViewIngredients => _numViewIngredients;
+
         [Tooltip("happy=0, sad=1")]
     [SerializeField] GameObject[] _goCharacterFaces;
     //[SerializeField] ParticleSystem _happyPar;
@@ -49,6 +53,7 @@ public class TrPuzzleHamburger : TrPuzzleManager
     bool _inputTimerON = true;
     Coroutine _coViewInit; //뷰 버거 재료 초기화 코루틴
     [SerializeField] GameObject _takeOut;
+    [SerializeField] GameObject _battleWaitingPanel;  // Battle 동기화 대기 중 표시할 로딩 패널
     bool _isTimeTenseEffectExec;
     List<Tween> _setViewDTList = new List<Tween>();
     Tween _setViewDT;
@@ -57,6 +62,8 @@ public class TrPuzzleHamburger : TrPuzzleManager
     [HideInInspector] public bool _goTimeTense = true;
     int _viewNum = 0;
     float _viewBurgerSpeed;
+    float _baseViewBurgerSpeed;
+    float _baseIngredientsDrop;
     
     //표정변화
     /*IEnumerator yChangesCharacterFace(bool _isCheck){
@@ -153,32 +160,15 @@ public class TrPuzzleHamburger : TrPuzzleManager
         if (yAnswerCheck(num)){
             if (_currInputIndex == _numViewIngredients - 1){
 
+                bool isBattle = GameManager._type == TT.enumGameType.Battle;
                 switch (_numViewIngredients)
                 {
-                    case 3:
-                        PlusS = 5;
-                        _currGameTime = _currGameTime + 2.5f;
-                        break;
-                    case 4:
-                        PlusS = 10;
-                        _currGameTime = _currGameTime + 3f;
-                        break;
-                    case 5:
-                        PlusS = 15;
-                        _currGameTime = _currGameTime + 3.5f;
-                        break;
-                    case 6:
-                        PlusS = 20;
-                        _currGameTime = _currGameTime + 4f;
-                        break;
-                    case 7:
-                        PlusS = 25;
-                        _currGameTime = _currGameTime + 4.5f;
-                        break;
-                    case 8:
-                        PlusS = 30;
-                        _currGameTime = _currGameTime + 5f;
-                        break;
+                    case 3: PlusS = 5;  if (!isBattle) _currGameTime += 2.5f; break;
+                    case 4: PlusS = 10; if (!isBattle) _currGameTime += 3f;   break;
+                    case 5: PlusS = 15; if (!isBattle) _currGameTime += 3.5f; break;
+                    case 6: PlusS = 20; if (!isBattle) _currGameTime += 4f;   break;
+                    case 7: PlusS = 25; if (!isBattle) _currGameTime += 4.5f; break;
+                    case 8: PlusS = 30; if (!isBattle) _currGameTime += 5f;   break;
                 }
 
                 zCorrect(false, PlusS);
@@ -200,12 +190,16 @@ public class TrPuzzleHamburger : TrPuzzleManager
     }
     void yWrong()
     {
+        OnBurgerFailed?.Invoke();
         if(_isOnVibrate)
+#if UNITY_ANDROID || UNITY_IOS
             Handheld.Vibrate();
+#endif
         TrUI_PuzzleHamburger.xInstance._btnON = false;
         //yEndGame(); 대전모드
         zWrong(false, -_numViewIngredients);
-        _currGameTime = _currGameTime - 3f;
+        if (GameManager._type != TT.enumGameType.Battle)
+            _currGameTime -= 3f;
         TrAudio_SFX.xInstance.zzPlayBurgerWrong(0f);
         StartCoroutine(yX());
         StartCoroutine(yFailInputBurger());
@@ -245,19 +239,25 @@ public class TrPuzzleHamburger : TrPuzzleManager
     }
     IEnumerator yTakeOut()
     {
-        yield return TT.WaitForSeconds(0.3f);
+        // 현재 햄버거 등장 속도 비율로 포장 속도도 같이 빨라짐
+        float speedRatio = _baseViewBurgerSpeed > 0f
+            ? Mathf.Clamp01(_viewBurgerSpeed / _baseViewBurgerSpeed)
+            : 1f;
+
+        yield return TT.WaitForSeconds(0.3f * speedRatio);
         _takeOut.SetActive(true);
-        yield return TT.WaitForSeconds(0.3f);
+        yield return TT.WaitForSeconds(0.3f * speedRatio);
         Vector3 ori = new Vector3(1f, 1f, 1f);
         TrAudio_UI.xInstance.zzPlay_Correct(0.3f);
-        _takeOut.transform.DOScale(ori, 0.5f).OnComplete(()=> _takeOut.SetActive(false));
-        yield return TT.WaitForSeconds(0.5f);
+        float scaleDuration = 0.5f * speedRatio;
+        _takeOut.transform.DOScale(ori, scaleDuration).OnComplete(() => _takeOut.SetActive(false));
+        yield return TT.WaitForSeconds(scaleDuration);
         TrUI_PuzzleHamburger.xInstance.zEffectFLEX(0);
-        
     }
     //인풋 버거를 다 쌓은 후
     IEnumerator yCompleteInputBurger(){
         isCorrect = true;
+        OnBurgerCompleted?.Invoke();
         yield return TT.WaitForSeconds(2.2f);
         
         foreach (Tween setViewDT in _setViewDTList)
@@ -532,6 +532,8 @@ public class TrPuzzleHamburger : TrPuzzleManager
         _numViewIngredients = 6;
         _viewBurgerSpeed = 0.3f;
         _ingredientsDropTerm = 0.6f;
+        _baseViewBurgerSpeed = _viewBurgerSpeed;
+        _baseIngredientsDrop = _ingredientsDropTerm;
         ySetIngredientsInstantiate();
         TrUI_PuzzleHamburger.xInstance.zHurryUPInstantiate();
         yInputIngredientsInstantiate();
@@ -550,17 +552,94 @@ public class TrPuzzleHamburger : TrPuzzleManager
     {
         base.yAfterReadyGame();
         TrUI_PuzzleNotice.xInstance._goPause = true;
-        yStartSet();
         TrUI_PuzzleHamburger.xInstance._btnON = false;
-        
 
-
-        GameManager.xInstance._isGameStarted = true;
+        if (GameManager._type == TT.enumGameType.Battle)
+        {
+            // Battle: yStartSet은 START! 팝업이 사라진 후 yShowStartThenBegin에서 호출
+            GameManager.xInstance._isGameStarted = false;
+            StartCoroutine(yWaitBattleStartSignal());
+        }
+        else
+        {
+            yStartSet();
+            GameManager.xInstance._isGameStarted = true;
+        }
     }
+
+    protected override string yReadyNoticeText() =>
+        GameManager._type == TT.enumGameType.Battle ? "READY~" : "START ~!";
+
+    // Battle 대기 시간이 최대 15s이므로 20f로 여유 있게 설정 (yStartBattle에서 취소됨)
+    protected override float yReadyNoticeDuration() =>
+        GameManager._type == TT.enumGameType.Battle ? 20f : 1.4f;
+
+    IEnumerator yWaitBattleStartSignal()
+    {
+        // READY~ 노티스가 이미 표시 중 — 별도 패널 불필요
+
+        var bm = TrBattleManager.xInstance;
+        if (bm == null) { yStartBattle(); yield break; }
+
+        // 신호가 이미 도착한 경우 즉시 시작
+        if (bm.BothPlayersReady) { yStartBattle(); yield break; }
+
+        bool started = false;
+        System.Action onReady = () => { started = true; };
+        bm.OnBothPlayersReady += onReady;
+
+        // 최대 15초 대기 후 타임아웃 폴백
+        float elapsed = 0f;
+        while (!started && elapsed < 15f)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+
+        bm.OnBothPlayersReady -= onReady;
+        if (!started)
+            Debug.LogWarning("[Battle] 게임 시작 동기화 타임아웃 — 강제 시작");
+
+        yStartBattle();
+    }
+
+    void yStartBattle() => StartCoroutine(yShowStartThenBegin());
+
+    IEnumerator yShowStartThenBegin()
+    {
+        if (_battleWaitingPanel != null) _battleWaitingPanel.SetActive(false);
+
+        // READY~ 자동 숨김 취소 → START! 로 교체
+        TrUI_PuzzleNotice.xInstance?.zCancelAutoHide();
+        TrUI_PuzzleNotice.xInstance?.zSetNoticeWithRex("START!", 60, 1.4f);
+
+        yield return TT.WaitForSeconds(1.4f);
+
+        // START! 팝업이 사라진 후 햄버거 초기화 + 게임 시작
+        yStartSet();
+        GameManager.xInstance._isGameStarted = true;
+        TrUI_BattleHPBar.xInstance?.zPlayIntroAnimation();
+    }
+
+    // Battle 모드: 시간이 줄수록 햄버거 등장/쌓기/음악 속도 가속
+    void yUpdateBattleSpeed()
+    {
+        float ratio = Mathf.Clamp01(_currGameTime / _maxGameTime); // 1.0(시작) → 0.0(종료)
+        _viewBurgerSpeed     = Mathf.Lerp(0.1f, _baseViewBurgerSpeed, ratio);
+        _ingredientsDropTerm = Mathf.Lerp(0.2f, _baseIngredientsDrop, ratio);
+
+        // 음악 pitch: 시간 촉박할수록 1.0 → 1.3
+        float pitch = Mathf.Lerp(1.3f, 1.0f, ratio);
+        TrAudio_Music.xInstance?.zzSetPitch(pitch);
+    }
+
     protected override void Update()
     {
         base.Update();
         if (!GameManager.xInstance._isGameStarted) return;
+
+        if (GameManager._type == TT.enumGameType.Battle)
+            yUpdateBattleSpeed();
 
         if (_currGameTime <= _maxGameTime * 0.25f && !_isTimeTenseEffectExec)
         {

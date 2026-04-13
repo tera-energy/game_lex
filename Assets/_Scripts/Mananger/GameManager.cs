@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,6 +17,8 @@ public class GameManager : MonoBehaviour
     public int _correctNum;
     public int _numMaxCombo;
     public static bool _canBtnClick = true;
+    public static bool _battleDidIWin;
+    public static int  _battleOppCorrect;
     static string _sceneName;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -38,6 +41,25 @@ public class GameManager : MonoBehaviour
 
     void Start(){
         Application.targetFrameRate = 60;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 씬 전환 시 AudioListener 중복 제거 (Camera.main 우선 유지)
+        var listeners = FindObjectsOfType<AudioListener>();
+        if (listeners.Length <= 1) return;
+
+        // Camera.main에 붙은 것을 우선 살리고 나머지 비활성화
+        var keep = listeners.FirstOrDefault(l => l.GetComponent<Camera>() != null)
+                ?? listeners[0];
+        foreach (var l in listeners)
+            if (l != keep) l.enabled = false;
     }
 
     void ySetState(){

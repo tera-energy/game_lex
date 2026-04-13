@@ -136,6 +136,14 @@ public class TrUI_PuzzlePause : MonoBehaviour
         TrAudio_UI.xInstance.zzPlay_GameOver2(2f);
 
         yield return TT.WaitForSeconds(2.5f);
+
+        // Battle 모드: 타임아웃 판정 후 결과창 표시 (씬 이동 없음)
+        if (GameManager._type == TT.enumGameType.Battle)
+        {
+            TrBattleManager.xInstance?.zHandleTimeout();
+            yield break;
+        }
+
         _fade.DOFade(1, 2f);
         yield return TT.WaitForSeconds(2f);
         SceneManager.LoadScene("Result");

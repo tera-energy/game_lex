@@ -149,6 +149,8 @@ public class TrPuzzleManager : MonoBehaviour
     }
 
     protected virtual void yBeforeReadyGame() { }
+    protected virtual string yReadyNoticeText()   => "START ~!";
+    protected virtual float  yReadyNoticeDuration() => 1.4f;
 
     // ���� ī��Ʈ
     protected virtual IEnumerator yProcReadyGame()
@@ -164,7 +166,7 @@ public class TrPuzzleManager : MonoBehaviour
 
         yield return new WaitUntil(() => TrUI_PuzzlePause.xInstance._fade.alpha == 0);
 
-        TrUI_PuzzleNotice.xInstance.zSetNoticeWithRex("START ~!", 60, 1.4f);
+        TrUI_PuzzleNotice.xInstance.zSetNoticeWithRex(yReadyNoticeText(), 60, yReadyNoticeDuration());
         yield return TT.WaitForSeconds(1.6f);
 
         yAfterReadyGame();

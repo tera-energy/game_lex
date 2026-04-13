@@ -36,6 +36,13 @@ public static class SupabaseClient
     public static string AuthUrl(string path) =>
         $"{ProjectUrl}/auth/v1/{path}";
 
+    // wss://xxx.supabase.co/realtime/v1/websocket?apikey=...&vsn=1.0.0
+    public static string RealtimeUrl()
+    {
+        string wsBase = ProjectUrl.Replace("https://", "wss://").Replace("http://", "ws://");
+        return $"{wsBase}/realtime/v1/websocket?apikey={AnonKey}&vsn=1.0.0";
+    }
+
     // 공통 헤더 설정
     public static void SetHeaders(UnityWebRequest req, bool withAuth = true)
     {

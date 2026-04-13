@@ -162,3 +162,5 @@ Android 빌드용 키스토어 정보는 **절대 소스에 커밋하지 마세�
 ## 알려진 기술 부채
 
 - `user_scores` 테이블의 `score1~score5` 고정 컬럼 구조 → 추후 `game_sessions` 방식(게임 세션별 행)으로 리팩토링 예정
+- Terms of Service 팝업 텍스트 불명확 — "(Need) Privacy Policy" 문구를 유저가 이해할 수 있는 설명으로 교체 필요 (`TrLobbyManager.cs`)
+- Google Cloud OAuth 프로젝트가 개인 계정으로 운영 중 → 배포 전 회사 계정으로 이전 필요 (계정 분실 시 로그인 전체 중단 위험)

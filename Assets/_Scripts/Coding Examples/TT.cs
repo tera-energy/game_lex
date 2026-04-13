@@ -16,11 +16,11 @@ public static class TT
 	[System.Serializable]
 	public class SerialSaveData
 	{
-		public int _memory; // ±â¾ï·Â
-		public int _concentration; // ÁýÁß·Â
-		public int _thought; // »ç°í·Â
-		public int _quickness; // ¼ø¹ß·Â
-		public int _problemSolving; // ¹®Á¦ ÇØ°á ´É·Â
+		public int _memory; // ï¿½ï¿½ï¿½ï¿½
+		public int _concentration; // ï¿½ï¿½ï¿½ß·ï¿½
+		public int _thought; // ï¿½ï¿½ï¿½ï¿½ï¿½
+		public int _quickness; // ï¿½ï¿½ï¿½ß·ï¿½
+		public int _problemSolving; // ï¿½ï¿½ï¿½ï¿½ ï¿½Ø°ï¿½ ï¿½É·ï¿½
 	}
 	[System.Serializable]
 	public class SerialPlayerData
@@ -45,7 +45,7 @@ public static class TT
 
 
 	public enum enumGameState { Title, Lobby, Play, Paused, Result }
-	public enum enumGameType { Train, Challenge }
+	public enum enumGameType { Train, Challenge, Battle }
 	public enum enumAnimState { Idle = 0, Move = 10, Jump = 20, Attack = 30, Damaged = 40, Died = 50, Win = 60 }
 	public enum enumButtonColor { Red, Yellow, Green, Blue }
 	public enum enumButtonInput { Neutral, Up, Down, Left, Right }
@@ -55,7 +55,7 @@ public static class TT
 	public enum enumPlayGameType { Develop, Campaign, Exercise, Rank }
 	public enum enumCollectibles { GoldCoin, Diamond }
 
-	public static readonly string[] strPlayerSkills = new string[] { "±â¾ï·Â", "ÁýÁß·Â", "¼ø¹ß·Â", "¹®Á¦ÇØ°á·Â", "»ç°í·Â" };
+	public static readonly string[] strPlayerSkills = new string[] { "ï¿½ï¿½ï¿½ï¿½", "ï¿½ï¿½ï¿½ß·ï¿½", "ï¿½ï¿½ï¿½ß·ï¿½", "ï¿½ï¿½ï¿½ï¿½ï¿½Ø°ï¿½ï¿½", "ï¿½ï¿½ï¿½ï¿½ï¿½" };
 	#region const string variables
 	public const string
 		strTagPlayer = "Player",
@@ -113,10 +113,10 @@ public static class TT
 	}
 
 	/// <summary>
-	/// ÇöÀç ¸¶¿ì½ºÄ¿¼­(or ÅÍÄ¡)°¡ UI¿ÀºêÁ§Æ®¿Í °ãÃÄÀÖ´ÂÁö È®ÀÎ.
-	/// ÁÖÀÇ: UI¿ÀºêÁ§Æ® Áß RayCast TargetÀÌ UncheckµÇ¾î ÀÖÀ¸¸é UI¿ÀºêÁ§Æ®°¡ ¾Æ´Ñ°ÍÀ¸·Î °£ÁÖÇÔ.
-	/// PC¿¡¼­ Å¬¸¯ ½Ã ¿¹»ó´ë·Î µÇ´Âµ¥ ÅÍÄ¡½Ã¿£ ÀÛµ¿ÀÌ ¾ÈµÇ´Â°Ç ÇöÀç À¯´ÏÆ¼ ÀÚÃ¼ ¹ö±×ÀÏ È®·üÀÌ ÀÖÀ½. 
-	/// ÃßÈÄ¿¡ ¿ø·¡ À¯´ÏÆ¼ ÇÔ¼öÀÎ, EventSystem.current.IsPointerOverGameObject(...)¸¦ »ç¿ëÇÏ±æ ±ÇÀåÇÔ.
+	/// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ì½ºÄ¿ï¿½ï¿½(or ï¿½ï¿½Ä¡)ï¿½ï¿½ UIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½.
+	/// ï¿½ï¿½ï¿½ï¿½: UIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ RayCast Targetï¿½ï¿½ Uncheckï¿½Ç¾ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ UIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Æ´Ñ°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	/// PCï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ç´Âµï¿½ ï¿½ï¿½Ä¡ï¿½Ã¿ï¿½ ï¿½Ûµï¿½ï¿½ï¿½ ï¿½ÈµÇ´Â°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. 
+	/// ï¿½ï¿½ï¿½Ä¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½Ô¼ï¿½ï¿½ï¿½, EventSystem.current.IsPointerOverGameObject(...)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	/// </summary>
 	public static bool zIsPointerOverUIObject()
 	{
@@ -151,7 +151,7 @@ public static class TT
 
 			if (useRandomCurve)
 			{
-				//»ý¼ºÁöÁ¡°ú µµÂøÁöÁ¡ÀÇ Áß°£À» Áö³ªÃÄ°¥ ÁöÁ¡À» ¸¸µë.
+				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ä°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 				Vector3 midCurvePath = Vector3.Lerp(fromPos, toPos, UnityEngine.Random.Range(0.3f, 0.6f)) +
 					new Vector3(UnityEngine.Random.Range(-500f, 500f), UnityEngine.Random.Range(-100f, 100f));
 				Vector3[] paths = new Vector3[] { fromPos, midCurvePath, toPos };
@@ -166,9 +166,9 @@ public static class TT
 	}
 
 	/// <summary>
-	/// »õ·Î¿î ¹éÅÍ°ªÀ» ¸®ÅÏ. <br/><br/>
-	/// »ç¿ë¿¹: transform.position = transform.position.zNew(y:10);<br/>
-	/// ¼³¸í: ÇöÀç °ÔÀÓ ¿ÀºêÁ§Æ®ÀÇ yÃà À§Ä¡¸¦ 10À¸·Î ¹Ù²Þ.
+	/// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½Í°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. <br/><br/>
+	/// ï¿½ï¿½ë¿¹: transform.position = transform.position.zNew(y:10);<br/>
+	/// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ yï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ 10ï¿½ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½.
 	/// </summary>
 	public static Vector3 zNew(this Vector3 original, float? x = null, float? y = null, float? z = null)
 	{
@@ -176,9 +176,9 @@ public static class TT
 	}
 
 	/// <summary>
-	/// »õ·Î¿î ¹éÅÍ°ªÀ» ¸®ÅÏ. <br/><br/>
-	/// »ç¿ë¿¹: transform.position = transform.position.zMod(y:-10);<br/>
-	/// ¼³¸í: ÇöÀç °ÔÀÓ ¿ÀºêÁ§Æ®ÀÇ yÃà À§Ä¡¸¦ 10¸¸Å­ ³»¸².
+	/// ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½Í°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. <br/><br/>
+	/// ï¿½ï¿½ë¿¹: transform.position = transform.position.zMod(y:-10);<br/>
+	/// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ yï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ 10ï¿½ï¿½Å­ ï¿½ï¿½ï¿½ï¿½.
 	/// </summary>
 	public static Vector3 zMod(this Vector3 original, float? x = null, float? y = null, float? z = null)
 	{
@@ -189,8 +189,8 @@ public static class TT
 	}
 
 	/// <summary>
-	/// ¹è¿­À» ·£´ýÀ¸·Î ¼¯À½.<br/><br/>
-	/// »ç¿ë¿¹: string[] names = new string[] { "A", "B", "C", "D", "E" };<br/>
+	/// ï¿½è¿­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.<br/><br/>
+	/// ï¿½ï¿½ë¿¹: string[] names = new string[] { "A", "B", "C", "D", "E" };<br/>
 	///			names.zShuffle();
 	/// </summary>
 	public static void zShuffle<T>(this T[] array)
@@ -209,8 +209,8 @@ public static class TT
 	}
 
 	/// <summary>
-	/// ¸®½ºÆ®¸¦ ·£´ýÀ¸·Î ¼¯À½.<br/><br/>
-	/// »ç¿ë¿¹: List<int> numbers = new List<int>(); <br/>
+	/// ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.<br/><br/>
+	/// ï¿½ï¿½ë¿¹: List<int> numbers = new List<int>(); <br/>
 	///			//then, for i, numbers.Add(i).<br/>
 	///			numbers.zShuffle();
 	/// </summary>
@@ -230,12 +230,12 @@ public static class TT
 	}
 
 	/// <summary>
-	/// Æ¯Á¤ (¶÷´Ù)¸Þ¼Òµå¸¦ ÀÏÁ¤ Å¸ÀÌ¸Ó ÈÄ¿¡ ½ÇÇàµÇµµ·Ï ¿¹¾à. À¯´ÏÆ¼ InvokeÀÇ ¾÷±×·¹ÀÌµå ¹öÁ¯.<br/><br/>
-	/// »ç¿ë¿¹: TT.UtilTimerFunc.zCreate(myMethod, 3f, "Shoot after 3");<br/>
-	/// ¿¹¾àÃë¼Ò: TT.UtilTimerFunc.zCancelTimer("Shoot after 3");
+	/// Æ¯ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½)ï¿½Þ¼Òµå¸¦ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ì¸ï¿½ ï¿½Ä¿ï¿½ ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. ï¿½ï¿½ï¿½ï¿½Æ¼ Invokeï¿½ï¿½ ï¿½ï¿½ï¿½×·ï¿½ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½.<br/><br/>
+	/// ï¿½ï¿½ë¿¹: TT.UtilTimerFunc.zCreate(myMethod, 3f, "Shoot after 3");<br/>
+	/// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: TT.UtilTimerFunc.zCancelTimer("Shoot after 3");
 	/// </summary>
 
-	/* <Å×½ºÆÃ ÄÚµå ºí·°> ÇÏ´Ü ÄÚµå¸¦ ¾Æ¹« ½ºÅ©¸³Æ®¿¡ º¹»ç ºÙ¿©³Ö±âÇÏ¿© Å×½ºÆ® (À¯´ÏÆ¼ÇÔ¼ö Start¿¡¼­ Å×½ºÆ®ÇÏ±â ÃßÃµ)
+	/* <ï¿½×½ï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½> ï¿½Ï´ï¿½ ï¿½Úµå¸¦ ï¿½Æ¹ï¿½ ï¿½ï¿½Å©ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¿ï¿½ï¿½Ö±ï¿½ï¿½Ï¿ï¿½ ï¿½×½ï¿½Æ® (ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½Ô¼ï¿½ Startï¿½ï¿½ï¿½ï¿½ ï¿½×½ï¿½Æ®ï¿½Ï±ï¿½ ï¿½ï¿½Ãµ)
 	--------------------------------------------------------------------------------------------------------------
 	TT.UtilDelayedFunc.zCreate(() => Debug.Log($"debug: {1111}"));
     TT.UtilDelayedFunc.zCreateAtLate(() => Debug.Log($"debug: {2222}"));
@@ -261,8 +261,8 @@ public static class TT
 
 	public class UtilDelayedFunc
 	{
-		#region ±¸ÇöÄÚµå
-		// MonoBehaviour ÇÔ¼ö¿¡ Á¢±ÙÇÏ±â À§ÇÑ ´õ¹ÌÅ¬·¡½º.
+		#region ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
+		// MonoBehaviour ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å¬ï¿½ï¿½ï¿½ï¿½.
 		class MonoBehaviourUpdate : MonoBehaviour
 		{
 			public Action _onUpdate;
@@ -312,7 +312,7 @@ public static class TT
 			}
 		}
 
-		/// <summary> functionTag´Â ³ªÁß¿¡ ÇØ´ç DelayedFunc¸¦ Ãë¼ÒÇÒ ¶§ ¾²ÀÓ. </summary>
+		/// <summary> functionTagï¿½ï¿½ ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½Ø´ï¿½ DelayedFuncï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. </summary>
 		public static UtilDelayedFunc zCreate(Action act, float delay = -1, string functionTag = null, bool useUnscaledTime = false)
 		{
 			yInitIfNeeded();
@@ -324,8 +324,8 @@ public static class TT
 			return delayedFunc;
 		}
 
-		/// <summary>"repeatXMore" ÆÐ·¯¹ÌÅÍ °ªÀ¸·Î -1À» º¸³»¸é ¹«ÇÑ½ÇÇà. <br/>
-		/// ¿¹½Ã: Ä«¿îÆ®´Ù¿î <br/>
+		/// <summary>"repeatXMore" ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ -1ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ñ½ï¿½ï¿½ï¿½. <br/>
+		/// ï¿½ï¿½ï¿½ï¿½: Ä«ï¿½ï¿½Æ®ï¿½Ù¿ï¿½ <br/>
 		/// int timer = 3;	<br/>
 		/// TT.UtilDelayedFunc.zCreateRepeat(()=>{ Debug.Log($"Countdown [{timer}]"); timer--; },5f,3,1f);
 		/// </summary>
@@ -340,7 +340,7 @@ public static class TT
 			return delayedFunc;
 		}
 
-		/// <summary> ÇØ´ç ÇÔ¼ö¸¦ UnityÀÇ LateUpdate ¶§ ½ÇÇàÇÔ. </summary> 
+		/// <summary> ï¿½Ø´ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ Unityï¿½ï¿½ LateUpdate ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. </summary> 
 		public static UtilDelayedFunc zCreateAtLate(Action act, float delay = -1, string functionTag = null, bool useUnscaledTime = false)
 		{
 			yInitIfNeeded();
@@ -352,8 +352,8 @@ public static class TT
 			return delayedFunc;
 		}
 
-		/// <summary>"repeatXMore" ÆÐ·¯¹ÌÅÍ °ªÀ¸·Î -1À» º¸³»¸é ¹«ÇÑ½ÇÇà. <br/>
-		/// ¿¹½Ã: Ä«¿îÆ®´Ù¿î <br/>
+		/// <summary>"repeatXMore" ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ -1ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ñ½ï¿½ï¿½ï¿½. <br/>
+		/// ï¿½ï¿½ï¿½ï¿½: Ä«ï¿½ï¿½Æ®ï¿½Ù¿ï¿½ <br/>
 		/// int timer = 3;	<br/>
 		/// TT.UtilDelayedFunc.zCreateRepeatAtLate(()=>{ Debug.Log($"Countdown [{timer}]"); timer--; },5f,3,1f);
 		public static UtilDelayedFunc zCreateRepeatAtLate(Action act, float delay, int repeatXMore, float repeatTimer, string functionTag = null, bool useUnscaledTime = false)
@@ -367,7 +367,7 @@ public static class TT
 			return delayedFunc;
 		}
 
-		/// <summary> ÇØ´ç functionTag¸¦ °¡Áö°í ÀÖ´Â DelayedFunc°¡ ÇÏ³ª¶óµµ ÀÖ´ÂÁö È®ÀÎ. </summary>
+		/// <summary> ï¿½Ø´ï¿½ functionTagï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ DelayedFuncï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½. </summary>
 		public static bool zIsAlive(string functionTag)
 		{
 			for (int i = _activeDFList.Count - 1; i >= 0; i--)
@@ -380,7 +380,7 @@ public static class TT
 			return false;
 		}
 
-		/// <summary> ÇØ´ç functionTag¸¦ °¡Áö°í ÀÖ´Â ¸ðµç DelayedFunc¸¦ Ãë¼ÒÇÔ. </summary>
+		/// <summary> ï¿½Ø´ï¿½ functionTagï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ DelayedFuncï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½. </summary>
 		public static void zCancel(string functionTag)
 		{
 			for (int i = _activeDFList.Count - 1; i >= 0; i--)
@@ -392,7 +392,7 @@ public static class TT
 			}
 		}
 
-		/// <summary> ´Ù¸¥ °÷(¿ÀºêÁ§Æ®)¿¡µµ DelayedFunc¸¦ ¸¸µé¾î »ç¿ëÇÏ°í ÀÖÀ» ¼ö ÀÖÀ¸¹Ç·Î ÀÌ ÇÔ¼ö´Â ¸Å¿ì ½ÅÁßÈ÷ ½á¾ßÇÔ. </summary>
+		/// <summary> ï¿½Ù¸ï¿½ ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®)ï¿½ï¿½ï¿½ï¿½ DelayedFuncï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½Å¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½. </summary>
 		public static void zCancelAll()
 		{
 			for (int i = _activeDFList.Count - 1; i >= 0; i--)
@@ -402,7 +402,7 @@ public static class TT
 			}
 		}
 
-		#region zCreate()¿¡ ÀÇÇØ ¸¸µé¾îÁø UtilDelayedFunc ¿ÀºêÁ§Æ®ÀÇ ·¹ÆÛ·±½º¸¦ °¡Áö°í ÀÖ´Ù¸é »ç¿ëÇÒ ¼ö ÀÖ´Â ÇÔ¼öµé.
+		#region zCreate()ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ UtilDelayedFunc ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Û·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½.
 
 		public void zKillSelf()
 		{
@@ -427,9 +427,9 @@ public static class TT
 			_repeatTimer = repeatTimer;
 		}
 
-		/// <summary> repeatNum = -1 >> ¹«ÇÑ¹ø <br/>
-		/// [ÁÖÀÇ] ÀÌ¹Ì Å¸ÀÌ¸Ó´Â µ¹¾Æ°¡°í ÀÖÀ» °ÍÀÌ¹Ç·Î 0À» ³Ñ°ÜÁØ´ÙÇØµµ ¹Ù·Î ¸ØÃßÁö ¾Ê°í ÇÑ¹øÀº ActionÀ» ½ÇÇàÇÏ°í ¸ØÃã. <br/>
-		/// ¹Ù·Î ¸ØÃß·Á¸é zKillSelf()¸¦ »ç¿ë.
+		/// <summary> repeatNum = -1 >> ï¿½ï¿½ï¿½Ñ¹ï¿½ <br/>
+		/// [ï¿½ï¿½ï¿½ï¿½] ï¿½Ì¹ï¿½ Å¸ï¿½Ì¸Ó´ï¿½ ï¿½ï¿½ï¿½Æ°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¹Ç·ï¿½ 0ï¿½ï¿½ ï¿½Ñ°ï¿½ï¿½Ø´ï¿½ï¿½Øµï¿½ ï¿½Ù·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½Ñ¹ï¿½ï¿½ï¿½ Actionï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½. <br/>
+		/// ï¿½Ù·ï¿½ ï¿½ï¿½ï¿½ß·ï¿½ï¿½ï¿½ zKillSelf()ï¿½ï¿½ ï¿½ï¿½ï¿½.
 		/// </summary>
 		public void zSetRepeatNumber(int repeatNum) { _numRepeats = repeatNum; }
 		public void zSetRepeatTimer(float repeatTimer) { _repeatTimer = repeatTimer; }
@@ -622,7 +622,7 @@ public static class TT
 	}
 
 
-	// 1µîÀº 0ºÎÅÍ
+	// 1ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½ï¿½ï¿½
 	public static int zGetRank(int rankNum, int[] array, int score)
 	{
 		int num = array.Length;

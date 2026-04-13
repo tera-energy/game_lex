@@ -12,6 +12,7 @@ public class TrUI_ResultManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI _scoreTxt;
     [SerializeField] TextMeshProUGUI _burgerTxt;
     [SerializeField] TextMeshProUGUI _ribText;
+    [SerializeField] TextMeshProUGUI _txtRetryButton; // Battle 모드에서 "재매칭"으로 변경
     [SerializeField] CanvasGroup _imgFade;
     [SerializeField] RectTransform[] _rtCookies;
     [SerializeField] Sprite _srBurnCookie;
@@ -45,6 +46,14 @@ public class TrUI_ResultManager : MonoBehaviour
     [SerializeField] AudioClip _acBurger;
 
     [SerializeField] RectTransform[] _rtHamburger;
+
+    [Header("경쟁 모드 전용")]
+    [SerializeField] GameObject          _goBattleScore;  // 경쟁 전용 패널 (기본 비활성)
+    [SerializeField] TextMeshProUGUI     _txtMyCount;     // 내 햄버거 수
+    [SerializeField] TextMeshProUGUI     _txtOppCount;    // 상대 햄버거 수
+    [SerializeField] GameObject          _goRexWin;       // WIN 시 활성화 (Rex)
+    [SerializeField] GameObject          _goRexLose;      // LOSE 시 활성화 (Rex_Sad)
+
     public static TrUI_ResultManager xInstance { get { return _instance; } }
 
     public void xBtnExit()
@@ -65,6 +74,12 @@ public class TrUI_ResultManager : MonoBehaviour
             StartCoroutine(StaminaManager.xInstance.zCheckStamina(() =>
             _imgFade.DOFade(1, 0.5f).OnComplete(() =>
             GameManager.xInstance.zSetPuzzleGame())));
+        else if (GameManager._type == TT.enumGameType.Battle)
+        {
+            TrMatchingSession.PendingRematch = true;
+            _imgFade.DOFade(1, 0.5f).OnComplete(() =>
+                SceneManager.LoadScene(TrProjectSettings.strLOBBY));
+        }
     }
     void ySetInfoDollar(int num)
     {
@@ -109,8 +124,8 @@ public class TrUI_ResultManager : MonoBehaviour
 
         IEnumerator yEffectIncreaseScore(TextMeshProUGUI text, float score, bool isScore){
         float maxScore = score;
-        float currScore = maxScore / 2;
-        float speed = maxScore - currScore;
+        float currScore = 0f;
+        float speed = maxScore > 0 ? maxScore : 1f;
         int soundScore = 1;
         while (currScore < maxScore){
             if (_isSkipScoreEffect)
@@ -136,7 +151,7 @@ public class TrUI_ResultManager : MonoBehaviour
                 speed = 1;
             yield return null;
         }
-        text.text = score.ToString();
+        text.text = ((int)maxScore).ToString();
 
         if (isScore){
             yield return TT.WaitForSeconds(0.5f);
@@ -153,8 +168,8 @@ public class TrUI_ResultManager : MonoBehaviour
         while (true){
             for(int i=2; i >= num; i--)
             {
-                //_rtCookies[i].DOScale(target, 0.25f).OnComplete(()=> _rtCookies[i].DOScale(origin, 0.25f));
-                _rtHamburger[i].DOScale(target, 0.25f).OnComplete(()=> _rtCookies[i].DOScale(origin, 0.25f));
+                int captured = i;
+                _rtHamburger[captured].DOScale(target, 0.25f).OnComplete(()=> _rtHamburger[captured].DOScale(origin, 0.25f));
                 yield return TT.WaitForSeconds(0.75f);
             }
 
@@ -174,11 +189,21 @@ public class TrUI_ResultManager : MonoBehaviour
         {
             if (DatabaseManager._myDatas != null)
             {
+                Debug.Log($"[Ranking] _myDatas OK. score={score}, currentMaxScore={DatabaseManager._myDatas.maxScore}");
                 if (score >= DatabaseManager._myDatas.maxScore)
                 {
                     DatabaseManager._myDatas.maxScore = score;
                     yield return StartCoroutine(DatabaseManager.xInstance.zSetMaxScore());
+                    Debug.Log($"[Ranking] zSetMaxScore called. score={score}");
                 }
+                else
+                {
+                    Debug.Log($"[Ranking] score({score}) < maxScore({DatabaseManager._myDatas.maxScore}), skip update.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[Ranking] _myDatas is NULL — max_score not updated!");
             }
 
             bool isChangeMyScore = false;
@@ -232,11 +257,11 @@ public class TrUI_ResultManager : MonoBehaviour
         GameManager._canBtnClick = true;
 
         _imgFade.DOFade(0, 1f);
-        yield return new WaitUntil(() => _imgFade.alpha == 0);
-        StartCoroutine(yEffectIncreaseScore(_scoreTxt, score, true));
-        StartCoroutine(yEffectIncreaseScore(_burgerTxt, correctNum, false));
+        yield return new WaitUntil(() => _imgFade.alpha <= 0.01f);
 
-        yield return new WaitUntil(() => _isSetScoreCom);
+        _scoreTxt.text = score.ToString();
+        _burgerTxt.text = correctNum.ToString();
+        _isSetScoreCom = true;
         Color color = Color.white;
         int burnCookie = 1;
 
@@ -253,6 +278,29 @@ public class TrUI_ResultManager : MonoBehaviour
             TrAudio_SFX.xInstance.zzPlayNewScore(0.1f);
             _dust.Play();
             yield return TT.WaitForSeconds(1f);
+        }
+
+        // Battle 모드: 카운트업 완료 후 WIN/LOSE + 햄버거 동시 등장
+        if (GameManager._type == TT.enumGameType.Battle)
+        {
+            bool win = GameManager._battleDidIWin;
+            Color battleColor;
+            ColorUtility.TryParseHtmlString(win ? "#FFD700" : "#AAAAAA", out battleColor);
+            _ribText.text  = win ? "WIN!" : "LOSE...";
+            _ribText.color = battleColor;
+            _ribText.gameObject.SetActive(true);
+            _ribText.transform.DOPunchScale(Vector3.one * 0.35f, 0.5f, 7, 0.4f);
+
+            TrAudio_SFX.xInstance.zPlaySFX(_acBurger);
+            _rtHamburger[0].transform.localPosition = new Vector3(4f, 322f, 0f);
+            _rtHamburger[0].gameObject.SetActive(true);
+            _rtHamburger[0].transform.localScale = new Vector3(0f, 0f, 0f);
+            _rtHamburger[0].transform.DOScale(new Vector3(1f, 1f, 1f), 1f);
+            _burnCookie[0].Play();
+
+            StartCoroutine(yStarsEffect(1));
+            yield return TT.WaitForSeconds(10f);
+            yield break;
         }
 
         TrAudio_SFX.xInstance.zPlaySFX(_acBurger);
@@ -272,13 +320,9 @@ public class TrUI_ResultManager : MonoBehaviour
         else if (score > 100 && score <= 300)
         {
             burnCookie = 2;
-            
+
             for (int i = 0; i < burnCookie; i++)
             {
-                /*_rtCookies[i].GetComponent<Image>().sprite = _srBurnCookie;
-                _burnCookie[i].Play();
-                TrAudio_SFX.xInstance.zzPlayBurnCookie(0f);
-                yield return TT.WaitForSeconds(1f);*/
                 _rtHamburger[0].transform.localPosition = new Vector3(60f, 315f, 0f);
                 _rtHamburger[1].transform.localPosition = new Vector3(-55f, 315f, 0f);
                 _rtHamburger[i].gameObject.SetActive(true);
@@ -286,7 +330,7 @@ public class TrUI_ResultManager : MonoBehaviour
                 _rtHamburger[i].transform.DOScale(new Vector3(1f, 1f, 1f), 1f);
                 _burnCookie[i].Play();
             }
-            
+
             _ribText.text = "GOOD!";
             ColorUtility.TryParseHtmlString("#ffffff", out color);
             TrAudio_UI.xInstance.zzPlay_PangPang(1.2f);
@@ -301,14 +345,9 @@ public class TrUI_ResultManager : MonoBehaviour
         }
         else if (score > 300)
         {
-            //burnCookie = 0;
             burnCookie = 3;
             for (int i = 0; i < burnCookie; i++)
             {
-                /*_rtCookies[i].GetComponent<Image>().sprite = _srBurnCookie;
-                _burnCookie[i].Play();
-                TrAudio_SFX.xInstance.zzPlayBurnCookie(0f);
-                yield return TT.WaitForSeconds(1f);*/
                 _rtHamburger[i].gameObject.SetActive(true);
                 _rtHamburger[i].transform.localScale = new Vector3(0f, 0f, 0f);
                 _rtHamburger[i].transform.DOScale(new Vector3(1f, 1f, 1f), 1f);
@@ -321,26 +360,12 @@ public class TrUI_ResultManager : MonoBehaviour
 
             TrAudio_Music.xInstance.zzPlayMain(3.8f, _acGreat);
         }
-        /*_firstPar.Play();
-
-        yield return TT.WaitForSeconds(1f);
-        for (int j = 0; j < _particle.Length; j++)
-            _particle[j].Play();
-        for (int i = 0; i < _fireCracker.Length; i++)
-            StartCoroutine(yShotFireCracker(i));
-    }
-
-    for (int i = burnCookie; i < _twinkleCookie.Length; i++)
-    {
-        _twinkleCookie[i].Play();
-        _rtCookies[i].GetComponent<Image>().sprite = _srTwinkleCookie;
-    }*/
 
         _ribText.color = color;
-            _ribText.gameObject.SetActive(true);
+        _ribText.gameObject.SetActive(true);
 
-            StartCoroutine(yStarsEffect(burnCookie));
-            yield return TT.WaitForSeconds(10f);
+        StartCoroutine(yStarsEffect(burnCookie));
+        yield return TT.WaitForSeconds(10f);
         
     }
     void Awake(){
@@ -360,6 +385,21 @@ public class TrUI_ResultManager : MonoBehaviour
         _burgerTxt.text = "0";
         _ribText.gameObject.SetActive(false);
         _imgFade.alpha = 1;
+
+        if (GameManager._type == TT.enumGameType.Battle && _txtRetryButton != null)
+            _txtRetryButton.text = "재매칭";
+
+        // 경쟁 전용 패널: Battle 모드일 때만 표시
+        if (_goBattleScore != null)
+            _goBattleScore.SetActive(GameManager._type == TT.enumGameType.Battle);
+
+        // Rex 오브젝트 ON/OFF: Battle 모드 WIN/LOSE 에 따라
+        if (GameManager._type == TT.enumGameType.Battle)
+        {
+            bool win = GameManager._battleDidIWin;
+            if (_goRexWin  != null) _goRexWin.SetActive(win);
+            if (_goRexLose != null) _goRexLose.SetActive(!win);
+        }
 
         yDollarInstantiate();
         StartCoroutine(ySetInitDollar());

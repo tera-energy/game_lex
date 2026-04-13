@@ -51,6 +51,7 @@ public class TrAudio_ : MonoBehaviour {
 	}
 
 	public void zStopMusic(){
+		_audioSource.pitch = 1.0f;
 		_audioSource.Stop();
 	}
 

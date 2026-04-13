@@ -61,6 +61,7 @@ public class AuthManager : MonoBehaviour
     public static bool _isGuest;
 
     Coroutine _coCertify;
+    Coroutine _coAutoRefresh;
 
     const string KEY_REFRESH_TOKEN = "SupabaseRefreshToken";
 
@@ -89,7 +90,7 @@ public class AuthManager : MonoBehaviour
     IEnumerator yGuestLogin()
     {
         bool isDone = false;
-        string url  = SupabaseClient.AuthUrl("token?grant_type=anonymous");
+        string url  = SupabaseClient.AuthUrl("signup");
 
         yield return SupabaseClient.Post(url, "{}",
             onSuccess: json =>
@@ -372,6 +373,7 @@ public class AuthManager : MonoBehaviour
 
         _txtId.text      = _userId;
         _isCompleteSignIn = true;
+        yStartAutoRefresh(); // 로그인 완료 후 50분마다 자동 갱신 시작
 
         if (type == TrPlatformType.GUEST)
         {
@@ -581,6 +583,29 @@ public class AuthManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
+    // 토큰 자동 갱신
+    // ──────────────────────────────────────────
+    void yStartAutoRefresh()
+    {
+        if (_coAutoRefresh != null) StopCoroutine(_coAutoRefresh);
+        _coAutoRefresh = StartCoroutine(yAutoRefreshToken());
+    }
+
+    IEnumerator yAutoRefreshToken()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(50 * 60f); // 50분마다 갱신
+            if (SupabaseClient.AccessToken == "") yield break;
+            yield return StartCoroutine(yRefreshSession());
+            Debug.Log("[Auth] 토큰 자동 갱신 완료");
+        }
+    }
+
+    /// <summary>외부(TrBattleManager 등)에서 토큰 즉시 갱신이 필요할 때 사용</summary>
+    public Coroutine zStartRefreshSession() => StartCoroutine(yRefreshSession());
+
+    // ──────────────────────────────────────────
     // 자동 로그인
     // ──────────────────────────────────────────
     IEnumerator yRefreshSession()
@@ -659,15 +684,7 @@ public class AuthManager : MonoBehaviour
         IsSignInOnProgress = false;
         IsReady            = true;
 
-#if UNITY_EDITOR
-        StartCoroutine(yCreateDummyUser());
-        _isAutoSignIn     = true;
-        _isCheckAutoSignIn = true;
-#endif
-
-#if !UNITY_EDITOR
         StartCoroutine(yCheckAutoLogin());
-#endif
     }
 
     // 에디터 전용 더미 유저 (DB 호출 없이 로컬 데이터로 대체)

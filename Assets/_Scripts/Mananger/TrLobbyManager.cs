@@ -82,6 +82,7 @@ public class TrLobbyManager : MonoBehaviour
     [SerializeField] GameObject[] _goBtnAppleSignIn;
 
     bool _isAlreadyAgreePolicy;
+    bool _isPendingRematch;
     const string _urlPrivacyPolicy = "http://teraenergy.co.kr/teraenergy_2021/privacy.html";
     [SerializeField] TrUI_Window_ _windowPrivacy;
     [SerializeField] TrUI_HoldButton _btnAgree;
@@ -208,6 +209,11 @@ public class TrLobbyManager : MonoBehaviour
         {
             StartCoroutine(StaminaManager.xInstance.zCheckStamina(yGameStart));
         }
+    }
+
+    public void zOnClickBattleStart()
+    {
+        TrUI_MatchingPopup.xInstance.zShow();
     }
     #endregion
 
@@ -396,6 +402,7 @@ public class TrLobbyManager : MonoBehaviour
             _goNoScoreTotalText?.SetActive(true);
         }
 
+        _goWaiting.SetActive(false);
         _goRanks.SetActive(true);
     }
 
@@ -534,10 +541,30 @@ public class TrLobbyManager : MonoBehaviour
             _trMenuComponents[i].localPosition = _btnMenu.transform.localPosition;
         }
         _imgFade.alpha = 1;
+        _isPendingRematch = TrMatchingSession.PendingRematch;
+        if (_isPendingRematch) TrMatchingSession.PendingRematch = false;
         _cokeCarbonic.Play();
         _btnAgree.zInteractDisable();
         StartCoroutine(yPosText());
         StartCoroutine(yWaitCheckVersion());
+        if (_isPendingRematch)
+            StartCoroutine(yAutoRematch());
+    }
+
+    IEnumerator yAutoRematch()
+    {
+        // 로비가 완전히 보일 때까지 대기 → 마치 Battle 버튼을 누른 것처럼 팝업 등장
+        yield return new WaitUntil(() => _imgFade.alpha <= 0.01f);
+        TrUI_MatchingPopup.xInstance?.zShow();
+    }
+
+    /// <summary>
+    /// 재매칭 취소 시 숨겨뒀던 로비를 페이드 인. TrUI_MatchingPopup에서 호출.
+    /// </summary>
+    public void zShowLobby()
+    {
+        _isPendingRematch = false;
+        _imgFade.DOFade(0, 0.8f);
     }
 
     void FixedUpdate()

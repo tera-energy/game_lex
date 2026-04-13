@@ -19,7 +19,7 @@ public class TrProjectSettings
 
     public static string _urlRanking = "http://118.67.143.233:8080/rex/rank";
 
-    public static string strLOBBY = "LobbyHamburger", strPUZZLE = "PuzzleHamburger", strRESULT = "Result";
+    public static string strLOBBY = "LobbyHamburger", strPUZZLE = "PuzzleHamburger", strRESULT = "Result", strBATTLE = "BattleHamburger";
 
 	public const string
 		FIREUSERID = "fireUserId",

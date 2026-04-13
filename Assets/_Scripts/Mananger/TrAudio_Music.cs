@@ -53,6 +53,15 @@ public class TrAudio_Music : TrAudio_ {
 		if(newVolume < 0) zStopMusic();
 	}
 
+	/// <summary>재생 속도(피치) 변경. 1.0=보통, 1.3=30% 빠름. head/body 동시 적용.</summary>
+	public void zzSetPitch(float pitch)
+	{
+		pitch = Mathf.Clamp(pitch, 0.5f, 2.0f);
+		_audioSource.pitch = pitch;
+		_head.pitch         = pitch;
+		_body.pitch         = pitch;
+	}
+
 	//==========================================================================================================
 	IEnumerator yProcPlayHeadBody(float scheduledTime){
 		yield return new WaitForSecondsRealtime(scheduledTime);
