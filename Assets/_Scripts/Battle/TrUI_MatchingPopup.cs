@@ -44,8 +44,28 @@ public class TrUI_MatchingPopup : MonoBehaviour
     public void zShow()
     {
         if (_coMatching != null) return; // 이미 매칭 중
+
+        if (_goPopup == null)
+        {
+            Debug.LogError("[MatchingPopup] _goPopup이 Inspector에 연결되지 않음 — 매칭 불가");
+            return;
+        }
+
         _isCancelled = false;
         _goPopup.SetActive(true);
+
+        // z축 오배치 방어: RectTransform anchoredPosition3D 기준으로 z 교정
+        var rt = _goPopup.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            var ap = rt.anchoredPosition3D;
+            if (ap.z != 0f)
+            {
+                Debug.LogWarning($"[MatchingPopup] z축 오배치 감지({ap.z}) — 교정합니다.");
+                rt.anchoredPosition3D = new Vector3(ap.x, ap.y, 0f);
+            }
+        }
+
         yStartSpinner();
         _txtStatus.text = "상대를 찾는 중...";
         _coMatching = StartCoroutine(yMatch());
@@ -57,7 +77,7 @@ public class TrUI_MatchingPopup : MonoBehaviour
         if (_coMatching != null) { StopCoroutine(_coMatching); _coMatching = null; }
         if (_coNick     != null) { StopCoroutine(_coNick);     _coNick     = null; }
         yStopSpinner();
-        _goPopup.SetActive(false);
+        if (_goPopup != null) _goPopup.SetActive(false);
 
         // 재매칭으로 진입한 경우 숨겨뒀던 로비를 페이드 인
         TrLobbyManager.xInstance?.zShowLobby();

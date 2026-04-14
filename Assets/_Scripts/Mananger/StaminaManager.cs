@@ -175,8 +175,8 @@ public class StaminaManager : MonoBehaviour
             float restCool = _maxCoolTimeSecond - _currCoolTimeSecond;
             int min = (int)restCool / 60;
             int sec = (int)restCool % 60;
-            _txtCountMinute.text = min.ToString("00");
-            _txtCountSecond.text = sec.ToString("00");
+            if (_txtCountMinute) _txtCountMinute.text = min.ToString("00");
+            if (_txtCountSecond) _txtCountSecond.text = sec.ToString("00");
 
             if (diffSecond >= _maxCoolTimeSecond)
             {

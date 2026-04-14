@@ -96,10 +96,29 @@ public class TrBattleManager : MonoBehaviour
 
     IEnumerator yConnectAfterSession()
     {
+        // 1프레임 대기: 씬 내 다른 컴포넌트(TrUI_BattleResult 등)의 Start()가
+        // OnBattleEnded 이벤트를 구독할 시간을 확보
+        yield return null;
+
+        if (string.IsNullOrEmpty(RoomId))
+        {
+            Debug.LogError("[Battle] RoomId 없음 — 연결 불가");
+            OnBattleEnded?.Invoke(false, 0, 0);
+            yield break;
+        }
+
         yield return StartCoroutine(yConnectRealtime());
+
+        if (!_wsConnected)
+        {
+            Debug.LogError("[Battle] WebSocket 연결 실패 — 결과창으로 복귀");
+            OnBattleEnded?.Invoke(false, 0, 0); // 결과창 표시로 유저 탈출 경로 제공
+            yield break;
+        }
+
         _coHeartbeat = StartCoroutine(yHeartbeat());
-        StartCoroutine(ySubscribePuzzleEventsWithRetry());
-        zSignalBattleStart();
+        yield return StartCoroutine(ySubscribePuzzleEventsWithRetry()); // 퍼즐 구독 완료 보장
+        yield return StartCoroutine(ySignalWsReady());                  // 양쪽 동시 시작 동기화
     }
 
     void OnDestroy() => Disconnect();
@@ -203,9 +222,8 @@ public class TrBattleManager : MonoBehaviour
                     GameManager.xInstance._correctNum = 0;
 
                 OnMatchFound?.Invoke();
-                yield return StartCoroutine(yConnectRealtime());
-                _coHeartbeat = StartCoroutine(yHeartbeat());
-                StartCoroutine(ySubscribePuzzleEventsWithRetry());
+                // yConnectAfterSession()과 동일한 2-Phase Handshake 경로로 통일
+                yield return StartCoroutine(yConnectAfterSession());
                 yield break;
             }
         }
@@ -424,6 +442,11 @@ public class TrBattleManager : MonoBehaviour
         yield return StartCoroutine(yConnectRealtime());
         _coHeartbeat = StartCoroutine(yHeartbeat());
         Debug.Log("[Battle] Realtime 재연결 완료");
+
+        // 재연결 중 Realtime 이벤트(in_progress)를 놓쳤을 수 있으므로
+        // DB에서 status를 직접 확인해 BothPlayersReady를 즉시 발화
+        if (!BothPlayersReady)
+            yield return StartCoroutine(yFetchAndWaitStartedAt());
     }
 
     // ── 퍼즐 이벤트 구독 ──────────────────────────────────────
@@ -628,60 +651,77 @@ public class TrBattleManager : MonoBehaviour
             onError: err => Debug.LogWarning("[Battle] 게이지 결과 서버 반영 실패: " + err));
     }
 
-    // ── 게임 시작 신호 ─────────────────────────────────────────
-    public void zSignalBattleStart()
-    {
-        StartCoroutine(yBattleStart());
-    }
-
-    IEnumerator yBattleStart()
+    // ── 2-Phase WS 준비 신호 ──────────────────────────────────────
+    // yConnectRealtime + ySubscribePuzzleEventsWithRetry 완료 후 호출.
+    // fn_battle_ws_ready RPC로 서버에 "나 구독 완료" 신호를 보내고,
+    // 양쪽 모두 신호를 보낸 시점에 서버가 in_progress 전환 → started_at 설정.
+    // Realtime으로 이벤트를 수신하면 yOnRealtimeMessage → yWaitUntilStartTime → 게임 시작.
+    // 35초 타임아웃 후에도 미수신이면 DB 직접 조회 폴백.
+    IEnumerator ySignalWsReady()
     {
         bool isDone = false;
-        bool didTransition = false;
-        string url  = SupabaseClient.RestUrl("rpc/fn_battle_start");
+        string url  = SupabaseClient.RestUrl("rpc/fn_battle_ws_ready");
         string json = $"{{\"p_room_id\":\"{RoomId}\",\"p_player_id\":\"{AuthManager._userId}\"}}";
 
         yield return SupabaseClient.Post(url, json,
             onSuccess: body =>
             {
-                string trimmed = body != null ? body.Trim() : "";
-                didTransition = (trimmed == "true");
-                Debug.Log(didTransition
-                    ? "[Battle] 내가 게임을 in_progress로 전환시킴 (첫 번째 호출)"
-                    : "[Battle] 상대가 이미 게임을 시작시킴 (두 번째 호출)");
+                Debug.Log(body?.Trim() == "true"
+                    ? "[Battle] 양쪽 WS ready — in_progress 전환됨"
+                    : "[Battle] WS ready 신호 전송 완료 — 상대 대기 중");
                 isDone = true;
             },
             onError: err =>
             {
-                Debug.LogError("[Battle] 게임 시작 신호 실패: " + err);
+                Debug.LogError("[Battle] WS ready 신호 실패: " + err);
                 isDone = true;
             });
 
         yield return new WaitUntil(() => isDone);
 
-        // 두 번째 호출(false): Realtime 이벤트를 놓쳤을 수 있으므로 DB에서 started_at 직접 조회
-        if (!didTransition && !BothPlayersReady)
+        // Realtime이 in_progress 이벤트를 전달할 때까지 대기 (최대 35초)
+        // DateTime.UtcNow 기반: 모바일 백그라운드 suspend 시에도 실제 경과 시간 기준으로 동작
+        var wsDeadline = System.DateTime.UtcNow.AddSeconds(35);
+        while (!BothPlayersReady && System.DateTime.UtcNow < wsDeadline)
+            yield return null;
+
+        // 타임아웃: Realtime 미수신 → DB에서 started_at 직접 조회 (폴백)
+        if (!BothPlayersReady)
+        {
+            Debug.LogWarning("[Battle] Realtime 미수신 타임아웃 — DB 폴백으로 started_at 조회");
             yield return StartCoroutine(yFetchAndWaitStartedAt());
-        // 첫 번째 호출(true): Realtime이 started_at을 전달 → yOnRealtimeMessage에서 처리됨
+        }
     }
 
-    // Realtime을 놓친 경우 폴백: DB에서 started_at 조회 후 대기
+    // Realtime을 놓친 경우 폴백: DB에서 started_at을 최대 10초간 재시도 조회
+    // started_at이 null인 경우 = 상대가 아직 fn_battle_ws_ready를 보내지 않은 상태
+    // 즉시 시작하면 동기화가 다시 어긋나므로 상대 신호 대기
     IEnumerator yFetchAndWaitStartedAt()
     {
-        bool done = false;
-        string startedAt = null;
+        string startedAt   = null;
+        float  pollDeadline = Time.realtimeSinceStartup + 10f;
 
-        yield return SupabaseClient.Get(
-            SupabaseClient.RestUrl("battle_rooms", $"id=eq.{RoomId}&select=started_at"),
-            onSuccess: resp => { startedAt = yParseStrField(resp, "started_at"); done = true; },
-            onError: _ => done = true);
+        while (startedAt == null && Time.realtimeSinceStartup < pollDeadline)
+        {
+            bool done = false;
+            yield return SupabaseClient.Get(
+                SupabaseClient.RestUrl("battle_rooms", $"id=eq.{RoomId}&select=started_at"),
+                onSuccess: resp => { startedAt = yParseStrField(resp, "started_at"); done = true; },
+                onError: _ => done = true);
 
-        yield return new WaitUntil(() => done);
+            yield return new WaitUntil(() => done);
+
+            if (startedAt == null)
+                yield return new WaitForSeconds(1f); // 1초 간격 재시도
+        }
 
         if (!string.IsNullOrEmpty(startedAt))
             yield return StartCoroutine(yWaitUntilStartTime(startedAt));
         else
-            zFireBothPlayersReady(); // started_at이 없으면 즉시 시작 (안전망)
+        {
+            Debug.LogWarning("[Battle] 폴백 최대 대기 초과(10초) — 즉시 시작");
+            zFireBothPlayersReady();
+        }
     }
 
     // ISO 8601 타임스탬프까지 대기 후 OnBothPlayersReady 발화

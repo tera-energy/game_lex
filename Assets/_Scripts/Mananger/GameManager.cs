@@ -112,6 +112,8 @@ public class GameManager : MonoBehaviour
     {
         _score = 0;
         _correctNum = 0;
+        _battleOppCorrect = 0;
+        _battleDidIWin    = false;
 
         SceneManager.LoadScene(TrProjectSettings.strPUZZLE);
     }

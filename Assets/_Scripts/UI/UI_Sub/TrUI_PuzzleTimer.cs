@@ -41,7 +41,7 @@ public class TrUI_PuzzleTimer : MonoBehaviour
 		float fillRate = currRemainTime / timeMax;
 		_timerBar.fillAmount = fillRate;
 
-		//³²Àº ½Ã°£¿¡ µû¶ó Å¸ÀÓ¹ÙÀÇ »ö±òÀ» ¹Ù²Þ.
+		//ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ó¹ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½.
 		/*if (fillRate > .6f) {
 			ySetTimerColor(0.5f, 0.8f, 0, 1);
 		} else if (fillRate > 0.3f) {
@@ -54,10 +54,10 @@ public class TrUI_PuzzleTimer : MonoBehaviour
 
 	//================================================================================================================
 
-	// À¯´ÏÆ¼ ¸Þ´º¿¡¼­ Edit>Project Settings>Editor Ç×¸ñÀÇ ÇÏ´Ü¿¡ enter play mode °¡ Ã¼Å©µÇµÇ°í reload domainÀÌ Ã¼Å©ÇØÁ¦µÇ°Ô
-	// ¼³Á¤µÇ¾î ÀÖ´Ù¸é À¯´ÏÆ¼ ÀÚÃ¼¸¦ Æ÷ÇÔÇÑ ¸ðµç staticº¯¼öÀÇ °ªÀº Á÷Á¢ ¸®¼ÂÇØÁÖ¾î¾ß ÇÔ.
-	// Æ¯È÷ static delegate/eventÀÇ ¸®½º³Ê µî·ÏÀÌ³ª static µ¥ÀÌÅÍ±¸Á¶¸¦ »ç¿ëÇÒ ½Ã ¸Å¿ì ÁÖÀÇÇØ¾ß ÇÔ.
-	// ´Ü, ÀÌ°ÍÀº ¿¡µðÅÍ»óÀÇ ÆíÀÇ¸¦ À§ÇÑ°ÍÀÌ¹Ç·Î ½ÇÁ¦ºôµå °á°ú¹°¿£ ¿µÇâ¾øÀ½.
+	// ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½Þ´ï¿½ï¿½ï¿½ï¿½ï¿½ Edit>Project Settings>Editor ï¿½×¸ï¿½ï¿½ï¿½ ï¿½Ï´Ü¿ï¿½ enter play mode ï¿½ï¿½ Ã¼Å©ï¿½ÇµÇ°ï¿½ reload domainï¿½ï¿½ Ã¼Å©ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½Æ¼ ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ staticï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ ï¿½ï¿½.
+	// Æ¯ï¿½ï¿½ static delegate/eventï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ static ï¿½ï¿½ï¿½ï¿½ï¿½Í±ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Å¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ ï¿½ï¿½.
+	// ï¿½ï¿½, ï¿½Ì°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½Ñ°ï¿½ï¿½Ì¹Ç·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 	static void yResetDomainCodes() {
 		_instance = null;
@@ -76,14 +76,15 @@ public class TrUI_PuzzleTimer : MonoBehaviour
 	void Start(){
 		if (GameManager._type == TT.enumGameType.Train){
 			_imgMode.sprite = _spTrain;
+			_imgMode.SetNativeSize();
 			_imgClock.color = _colBlue;
 			_timerBar.color = _colBlue;
 		}
 		else if (GameManager._type == TT.enumGameType.Challenge){
 			_imgMode.sprite = _spChallenege;
+			_imgMode.SetNativeSize();
 			_imgClock.color = _colRed;
 			_timerBar.color = _colRed;
 		}
-		_imgMode.SetNativeSize();
 	}
 }

@@ -291,6 +291,17 @@ public class TrUI_ResultManager : MonoBehaviour
             _ribText.gameObject.SetActive(true);
             _ribText.transform.DOPunchScale(Vector3.one * 0.35f, 0.5f, 7, 0.4f);
 
+            // 경쟁 전용 패널: 내 햄버거 수 / 상대 햄버거 수 표시
+            if (_txtMyCount  != null)
+                _txtMyCount.text  = correctNum.ToString();
+            else
+                Debug.LogWarning("[ResultManager] _txtMyCount가 Inspector에 연결되지 않음");
+
+            if (_txtOppCount != null)
+                _txtOppCount.text = GameManager._battleOppCorrect.ToString();
+            else
+                Debug.LogWarning("[ResultManager] _txtOppCount가 Inspector에 연결되지 않음");
+
             TrAudio_SFX.xInstance.zPlaySFX(_acBurger);
             _rtHamburger[0].transform.localPosition = new Vector3(4f, 322f, 0f);
             _rtHamburger[0].gameObject.SetActive(true);
@@ -399,6 +410,10 @@ public class TrUI_ResultManager : MonoBehaviour
             bool win = GameManager._battleDidIWin;
             if (_goRexWin  != null) _goRexWin.SetActive(win);
             if (_goRexLose != null) _goRexLose.SetActive(!win);
+
+            // 카운트 텍스트: 데이터 로딩 완료 전까지 "-" 표시 (빈 텍스트 노출 방지)
+            if (_txtMyCount  != null) _txtMyCount.text  = "-";
+            if (_txtOppCount != null) _txtOppCount.text = "-";
         }
 
         yDollarInstantiate();

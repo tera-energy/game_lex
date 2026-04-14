@@ -41,7 +41,20 @@ public class TrUI_BattleHPBar : MonoBehaviour
     [Header("이펙트")]
     [SerializeField] TrUI_BattleEffects _battleEffects;
 
-    const float AnimDuration = 0.4f;
+    [Header("손님 쟁탈전 — 가게 아이콘")]
+    [Tooltip("바 왼쪽 내 가게 아이콘 Image")]
+    [SerializeField] Image _imgMyShop;
+    [Tooltip("바 오른쪽 상대 가게 아이콘 Image")]
+    [SerializeField] Image _imgOppShop;
+
+    [Header("손님 쟁탈전 — 손님 수 텍스트")]
+    [Tooltip("내 가게 손님 수 (정답 수 표시)")]
+    [SerializeField] TextMeshProUGUI _txtMyCustomers;
+    [Tooltip("상대 가게 손님 수 (정답 수 표시)")]
+    [SerializeField] TextMeshProUGUI _txtOppCustomers;
+
+    const float  AnimDuration     = 0.4f;
+    const string CustomerIdleKey = "CustomerIdle";
 
     float _prevFill    = 0.5f;
     bool  _isSubscribed = false;
@@ -89,6 +102,8 @@ public class TrUI_BattleHPBar : MonoBehaviour
         bm.OnMatchFound         -= OnMatchFound;
         bm.OnOppBurgerCompleted -= zPlayOppFlash;
         _isSubscribed = false;
+
+        DOTween.Kill(CustomerIdleKey);
     }
 
     void Update()
@@ -112,6 +127,12 @@ public class TrUI_BattleHPBar : MonoBehaviour
         _prevFill = 0.5f;
         zUpdateGauge(0.5f, instant: true);
         zFlashMySide();
+        if (_txtMyCustomers  != null) _txtMyCustomers.text  = "0명";
+        if (_txtOppCustomers != null) _txtOppCustomers.text = "0명";
+
+        DOTween.Kill(CustomerIdleKey);
+        if (_tfCollisionPoint != null)
+            yPlayCustomerIdleWobble();
     }
 
     // ── 게이지 갱신 ────────────────────────────────────────────
@@ -152,17 +173,52 @@ public class TrUI_BattleHPBar : MonoBehaviour
 
             if (iGained && _battleEffects != null && _tfCollisionPoint != null)
                 _battleEffects.zPlayAt(_tfCollisionPoint.anchoredPosition);
+
+            yPlayCustomerMoveWobble(iGained);
         }
 
         _prevFill = fill;
     }
 
-    // 경계 마커 위치 갱신 (두 fillAmount 바의 경계선)
+    // 손님 위치 갱신: ratio > 0.5 (내가 이김) → 손님이 왼쪽 내 가게 방향으로 이동
     void yMoveMarker(float ratio)
     {
         if (_tfCollisionPoint == null) return;
-        float x = (ratio - 0.5f) * _barWidth;
+        float x = (0.5f - ratio) * _barWidth;
         _tfCollisionPoint.anchoredPosition = new Vector2(x, _tfCollisionPoint.anchoredPosition.y);
+    }
+
+    // ── 손님 아이콘 연출 ───────────────────────────────────────
+
+    // 평소 흔들림: 군중이 수다 떠는 느낌으로 랜덤 기울기 (재귀 호출)
+    void yPlayCustomerIdleWobble()
+    {
+        if (_tfCollisionPoint == null || !gameObject.activeInHierarchy) return;
+        float delay = Random.Range(0.8f, 2.5f);
+        DOVirtual.DelayedCall(delay, () =>
+        {
+            if (_tfCollisionPoint == null || !gameObject.activeInHierarchy) return;
+            float angle = Random.Range(-10f, 10f);
+            _tfCollisionPoint
+                .DOPunchRotation(new Vector3(0f, 0f, angle), 0.55f, 7, 0.3f)
+                .SetId(CustomerIdleKey)
+                .OnComplete(yPlayCustomerIdleWobble);
+        }).SetId(CustomerIdleKey);
+    }
+
+    // 이동 시 흔들림: 이동 방향으로 기울었다가 탄성 복귀 → 평소 흔들림 재개
+    void yPlayCustomerMoveWobble(bool movingToMyShop)
+    {
+        if (_tfCollisionPoint == null) return;
+        DOTween.Kill(CustomerIdleKey);
+
+        // 내 가게(왼쪽) 방향 = positive Z(반시계), 상대(오른쪽) = negative Z
+        float leanZ = movingToMyShop ? 20f : -20f;
+        DOTween.Sequence()
+            .Append(_tfCollisionPoint.DORotate(new Vector3(0f, 0f, leanZ),  0.1f).SetEase(Ease.OutQuad))
+            .Append(_tfCollisionPoint.DORotate(Vector3.zero,                 0.5f).SetEase(Ease.OutElastic))
+            .OnComplete(yPlayCustomerIdleWobble)
+            .SetId(CustomerIdleKey);
     }
 
     // ── 게임 시작 인트로 ───────────────────────────────────────
@@ -192,7 +248,11 @@ public class TrUI_BattleHPBar : MonoBehaviour
 
     // ── 진행 상황 수신 ─────────────────────────────────────────
 
-    void OnProgressChanged(int myCorrect, int oppCorrect) { }
+    void OnProgressChanged(int myCorrect, int oppCorrect)
+    {
+        if (_txtMyCustomers  != null) _txtMyCustomers.text  = $"{myCorrect}명";
+        if (_txtOppCustomers != null) _txtOppCustomers.text = $"{oppCorrect}명";
+    }
 
     // ── 게임 시작 플래시 ───────────────────────────────────────
 

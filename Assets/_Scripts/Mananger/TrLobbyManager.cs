@@ -553,9 +553,32 @@ public class TrLobbyManager : MonoBehaviour
 
     IEnumerator yAutoRematch()
     {
-        // 로비가 완전히 보일 때까지 대기 → 마치 Battle 버튼을 누른 것처럼 팝업 등장
-        yield return new WaitUntil(() => _imgFade.alpha <= 0.01f);
-        TrUI_MatchingPopup.xInstance?.zShow();
+        if (_imgFade == null)
+        {
+            Debug.LogError("[Lobby] _imgFade가 null — yAutoRematch 실행 불가");
+            yield break;
+        }
+
+        // 로비 페이드 완료 대기 (최대 5초, 백그라운드 전환 대비 realtimeSinceStartup 사용)
+        float deadline = Time.realtimeSinceStartup + 5f;
+        while (_imgFade.alpha > 0.01f && Time.realtimeSinceStartup < deadline)
+            yield return null;
+
+        // 타임아웃으로 페이드 미완료인 경우 로비 명시적 복구 (팝업 표시 성공 여부와 무관하게)
+        if (_imgFade.alpha > 0.01f)
+            _imgFade.DOFade(0, 0.5f);
+
+        TrUI_MatchingPopup popup = TrUI_MatchingPopup.xInstance
+                                   ?? FindObjectOfType<TrUI_MatchingPopup>();
+
+        if (popup != null)
+        {
+            popup.zShow();
+        }
+        else
+        {
+            Debug.LogError("[Lobby] TrUI_MatchingPopup 인스턴스를 찾을 수 없음 — 재매칭 팝업 표시 실패");
+        }
     }
 
     /// <summary>
